@@ -10,9 +10,10 @@ public interface IEnrollmentService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize);
+        int pageSize,
+        string? expand);
 
-    Task<EnrollmentResponse> GetEnrollmentByIdAsync(int id, string? expand);
+    Task<EnrollmentResponse> GetEnrollmentByIdAsync(int id);
     Task<EnrollmentResponse> CreateEnrollmentAsync(EnrollmentCreateRequest request);
     Task<EnrollmentResponse> UpdateEnrollmentAsync(int id, EnrollmentUpdateRequest request);
     Task DeleteEnrollmentAsync(int id);

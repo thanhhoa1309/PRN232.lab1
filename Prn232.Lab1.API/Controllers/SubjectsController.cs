@@ -22,9 +22,10 @@ public class SubjectsController : ControllerBase
         [FromQuery] string? sortBy,
         [FromQuery] bool isDescending = false,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? expand = null)
     {
-        var result = await _service.GetSubjectsAsync(search, sortBy, isDescending, page, pageSize);
+        var result = await _service.GetSubjectsAsync(search, sortBy, isDescending, page, pageSize, expand);
         return Ok(ApiResult<Pagination<SubjectResponse>>.Success(result));
     }
 

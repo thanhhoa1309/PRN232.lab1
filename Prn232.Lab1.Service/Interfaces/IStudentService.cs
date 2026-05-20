@@ -10,9 +10,10 @@ public interface IStudentService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize);
+        int pageSize,
+        string? expand);
 
-    Task<StudentResponse> GetStudentByIdAsync(int id, string? expand);
+    Task<StudentResponse> GetStudentByIdAsync(int id);
     Task<StudentResponse> CreateStudentAsync(StudentCreateRequest request);
     Task<StudentResponse> UpdateStudentAsync(int id, StudentUpdateRequest request);
     Task DeleteStudentAsync(int id);

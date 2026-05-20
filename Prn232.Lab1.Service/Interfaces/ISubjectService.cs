@@ -10,7 +10,8 @@ public interface ISubjectService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize);
+        int pageSize,
+        string? expand);
 
     Task<SubjectResponse> GetSubjectByIdAsync(int id);
     Task<SubjectResponse> CreateSubjectAsync(SubjectCreateRequest request);

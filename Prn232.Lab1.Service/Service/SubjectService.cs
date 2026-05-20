@@ -22,7 +22,8 @@ public class SubjectService : ISubjectService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize)
+        int pageSize,
+        string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;

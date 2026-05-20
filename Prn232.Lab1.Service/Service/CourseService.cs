@@ -22,7 +22,8 @@ public class CourseService : ICourseService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize)
+        int pageSize,
+        string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
@@ -46,35 +47,20 @@ public class CourseService : ICourseService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(c => CourseListDto.FromEntity(c)).ToList();
+        var responses = items.Select(c => CourseListDto.FromEntity(c, expand)).ToList();
 
         return new Pagination<CourseResponse>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<CourseResponse> GetCourseByIdAsync(int id, string? expand)
+    public async Task<CourseResponse> GetCourseByIdAsync(int id)
     {
-        IQueryable<Course> query = _unitOfWork.CourseRepository.GetAllAsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(expand))
-        {
-            if (expand.Contains("semester", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Include(c => c.Semester);
-            }
-
-            if (expand.Contains("enrollments", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Include(c => c.Enrollments);
-            }
-        }
-
-        var entity = await query.FirstOrDefaultAsync(c => c.CourseId == id);
+        var entity = await _unitOfWork.CourseRepository.GetByIdAsync(id);
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Course not found.");
         }
 
-        return CourseListDto.FromEntity(entity, expand);
+        return CourseListDto.FromEntity(entity);
     }
 
     public async Task<CourseResponse> CreateCourseAsync(CourseCreateRequest request)

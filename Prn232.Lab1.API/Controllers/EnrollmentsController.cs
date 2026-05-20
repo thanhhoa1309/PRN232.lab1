@@ -22,16 +22,17 @@ public class EnrollmentsController : ControllerBase
         [FromQuery] string? sortBy,
         [FromQuery] bool isDescending = false,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? expand = null)
     {
-        var result = await _service.GetEnrollmentsAsync(search, sortBy, isDescending, page, pageSize);
+        var result = await _service.GetEnrollmentsAsync(search, sortBy, isDescending, page, pageSize, expand);
         return Ok(ApiResult<Pagination<EnrollmentResponse>>.Success(result));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetEnrollment(int id, [FromQuery] string? expand = null)
+    public async Task<IActionResult> GetEnrollment(int id)
     {
-        var enrollment = await _service.GetEnrollmentByIdAsync(id, expand);
+        var enrollment = await _service.GetEnrollmentByIdAsync(id);
         return Ok(ApiResult<EnrollmentResponse>.Success(enrollment));
     }
 

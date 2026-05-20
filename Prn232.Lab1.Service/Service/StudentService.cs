@@ -22,7 +22,8 @@ public class StudentService : IStudentService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize)
+        int pageSize,
+        string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
@@ -47,27 +48,20 @@ public class StudentService : IStudentService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(s => StudentListDto.FromEntity(s)).ToList();
+        var responses = items.Select(s => StudentListDto.FromEntity(s, expand)).ToList();
 
         return new Pagination<StudentResponse>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<StudentResponse> GetStudentByIdAsync(int id, string? expand)
+    public async Task<StudentResponse> GetStudentByIdAsync(int id)
     {
-        IQueryable<Student> query = _unitOfWork.StudentRepository.GetAllAsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(expand) && expand.Contains("enrollments", StringComparison.OrdinalIgnoreCase))
-        {
-            query = query.Include(s => s.Enrollments);
-        }
-
-        var entity = await query.FirstOrDefaultAsync(s => s.StudentId == id);
+        var entity = await _unitOfWork.StudentRepository.GetByIdAsync(id);
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Student not found.");
         }
 
-        return StudentListDto.FromEntity(entity, expand);
+        return StudentListDto.FromEntity(entity);
     }
 
     public async Task<StudentResponse> CreateStudentAsync(StudentCreateRequest request)

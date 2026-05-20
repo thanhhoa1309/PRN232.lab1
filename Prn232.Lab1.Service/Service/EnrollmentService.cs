@@ -22,7 +22,8 @@ public class EnrollmentService : IEnrollmentService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize)
+        int pageSize,
+        string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
@@ -48,35 +49,20 @@ public class EnrollmentService : IEnrollmentService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(e => EnrollmentListDto.FromEntity(e)).ToList();
+        var responses = items.Select(e => EnrollmentListDto.FromEntity(e, expand)).ToList();
 
         return new Pagination<EnrollmentResponse>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<EnrollmentResponse> GetEnrollmentByIdAsync(int id, string? expand)
+    public async Task<EnrollmentResponse> GetEnrollmentByIdAsync(int id)
     {
-        IQueryable<Enrollment> query = _unitOfWork.EnrollmentRepository.GetAllAsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(expand))
-        {
-            if (expand.Contains("student", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Include(e => e.Student);
-            }
-
-            if (expand.Contains("course", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Include(e => e.Course!).ThenInclude(c => c.Semester);
-            }
-        }
-
-        var entity = await query.FirstOrDefaultAsync(e => e.EnrollmentId == id);
+        var entity = await _unitOfWork.EnrollmentRepository.GetByIdAsync(id);
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Enrollment not found.");
         }
 
-        return EnrollmentListDto.FromEntity(entity, expand);
+        return EnrollmentListDto.FromEntity(entity);
     }
 
     public async Task<EnrollmentResponse> CreateEnrollmentAsync(EnrollmentCreateRequest request)

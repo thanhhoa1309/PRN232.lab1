@@ -10,9 +10,10 @@ public interface ISemesterService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize);
+        int pageSize,
+        string? expand);
 
-    Task<SemesterResponse> GetSemesterByIdAsync(int id, string? expand);
+    Task<SemesterResponse> GetSemesterByIdAsync(int id);
     Task<SemesterResponse> CreateSemesterAsync(SemesterCreateRequest request);
     Task<SemesterResponse> UpdateSemesterAsync(int id, SemesterUpdateRequest request);
     Task DeleteSemesterAsync(int id);

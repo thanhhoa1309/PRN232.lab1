@@ -22,7 +22,8 @@ public class SemesterService : ISemesterService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize)
+        int pageSize,
+        string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
@@ -47,27 +48,20 @@ public class SemesterService : ISemesterService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(s => SemesterListDto.FromEntity(s)).ToList();
+        var responses = items.Select(s => SemesterListDto.FromEntity(s, expand)).ToList();
 
         return new Pagination<SemesterResponse>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<SemesterResponse> GetSemesterByIdAsync(int id, string? expand)
+    public async Task<SemesterResponse> GetSemesterByIdAsync(int id)
     {
-        IQueryable<Semester> query = _unitOfWork.SemesterRepository.GetAllAsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(expand) && expand.Contains("courses", StringComparison.OrdinalIgnoreCase))
-        {
-            query = query.Include(s => s.Courses);
-        }
-
-        var entity = await query.FirstOrDefaultAsync(s => s.SemesterId == id);
+        var entity = await _unitOfWork.SemesterRepository.GetByIdAsync(id);
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Semester not found.");
         }
 
-        return SemesterListDto.FromEntity(entity, expand);
+        return SemesterListDto.FromEntity(entity);
     }
 
     public async Task<SemesterResponse> CreateSemesterAsync(SemesterCreateRequest request)

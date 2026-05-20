@@ -10,9 +10,10 @@ public interface ICourseService
         string? sortBy,
         bool isDescending,
         int page,
-        int pageSize);
+        int pageSize,
+        string? expand);
 
-    Task<CourseResponse> GetCourseByIdAsync(int id, string? expand);
+    Task<CourseResponse> GetCourseByIdAsync(int id);
     Task<CourseResponse> CreateCourseAsync(CourseCreateRequest request);
     Task<CourseResponse> UpdateCourseAsync(int id, CourseUpdateRequest request);
     Task DeleteCourseAsync(int id);

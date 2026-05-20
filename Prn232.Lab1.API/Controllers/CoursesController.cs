@@ -22,16 +22,17 @@ public class CoursesController : ControllerBase
         [FromQuery] string? sortBy,
         [FromQuery] bool isDescending = false,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? expand = null)
     {
-        var result = await _service.GetCoursesAsync(search, sortBy, isDescending, page, pageSize);
+        var result = await _service.GetCoursesAsync(search, sortBy, isDescending, page, pageSize, expand);
         return Ok(ApiResult<Pagination<CourseResponse>>.Success(result));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetCourse(int id, [FromQuery] string? expand = null)
+    public async Task<IActionResult> GetCourse(int id)
     {
-        var course = await _service.GetCourseByIdAsync(id, expand);
+        var course = await _service.GetCourseByIdAsync(id);
         return Ok(ApiResult<CourseResponse>.Success(course));
     }
 
