@@ -1,0 +1,38 @@
+services:
+  prn232.lab1.api:
+    image: ${DOCKER_REGISTRY-}prn232lab1api
+    build:
+      context: .
+      dockerfile: Prn232.Lab1.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=Prn232.Lab1DB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true
+    ports:
+      - "5000:5000"
+    networks:
+      - prn232.lab1-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: prn232.lab1-sqlserver
+    restart: always
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong@Passw0rd"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - prn232.lab1-network
+
+volumes:
+  sqlserver-data:
+
+networks:
+  prn232.lab1-network:
+    driver: bridge

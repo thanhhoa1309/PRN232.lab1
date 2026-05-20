@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="Prn232.Lab1.API/Prn232.Lab1.API.csproj" />
+  <Project Path="Prn232.Lab1.Repositories/Prn232.Lab1.Repositories.csproj" />
+  <Project Path="Prn232.Lab1.Service/Prn232.Lab1.Service.csproj" />
+</Solution>
