@@ -2,58 +2,125 @@ using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Subjects;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Utils;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[ApiController]
 [Route("api/subjects")]
+[ApiController]
 public class SubjectsController : ControllerBase
 {
-    private readonly ISubjectService _service;
+    private readonly ISubjectService _subjectService;
 
-    public SubjectsController(ISubjectService service)
+    public SubjectsController(ISubjectService subjectService)
     {
-        _service = service;
+        _subjectService = subjectService;
     }
+
+    // =========================================================================
+    // GET ALL  —  GET /api/subjects
+    // =========================================================================
 
     [HttpGet]
-    public async Task<IActionResult> GetSubjects(
-        [FromQuery] string? search,
-        [FromQuery] string? sortBy,
-        [FromQuery] bool isDescending = false,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? expand = null)
+    [SwaggerOperation(
+        Summary = "Get all subjects",
+        Description = "Retrieve a paginated list of subjects with optional search and sort options.")]
+    [ProducesResponseType(typeof(ApiResult<Pagination<SubjectResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+    public async Task<IActionResult> GetAllSubjects(
+        [FromQuery, SwaggerParameter(Description = "Search by subject name or code (optional)")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort by field: subjectId, subjectCode, subjectName, credit (optional)")] string? sortBy = null,
+        [FromQuery, SwaggerParameter(Description = "Sort in descending order? Default: false")] bool isDescending = false,
+        [FromQuery, SwaggerParameter(Description = "Page number, starting from 1")] int page = 1,
+        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Expand related data (optional)")] string? expand = null)
     {
-        var result = await _service.GetSubjectsAsync(search, sortBy, isDescending, page, pageSize, expand);
-        return Ok(ApiResult<Pagination<SubjectResponse>>.Success(result));
+        if (page < 1 || pageSize < 1)
+        {
+            return BadRequest(ApiResult<object>.Failure("400", "Invalid pagination parameters."));
+        }
+
+        var result = await _subjectService.GetSubjectsAsync(search, sortBy, isDescending, page, pageSize, expand);
+
+        return Ok(ApiResult<Pagination<SubjectResponse>>.Success(result, "200", "Subjects retrieved successfully."));
     }
+
+    // =========================================================================
+    // GET BY ID  —  GET /api/subjects/{id}
+    // =========================================================================
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetSubject(int id)
+    [SwaggerOperation(
+        Summary = "Get subject details",
+        Description = "Retrieve detailed information for a specific subject by ID.")]
+    [ProducesResponseType(typeof(ApiResult<SubjectResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    public async Task<IActionResult> GetSubjectById([FromRoute] int id)
     {
-        var subject = await _service.GetSubjectByIdAsync(id);
-        return Ok(ApiResult<SubjectResponse>.Success(subject));
+        var result = await _subjectService.GetSubjectByIdAsync(id);
+
+        return Ok(ApiResult<SubjectResponse>.Success(result, "200", "Subject retrieved successfully."));
     }
+
+    // =========================================================================
+    // CREATE  —  POST /api/subjects    // =========================================================================
 
     [HttpPost]
-    public async Task<IActionResult> CreateSubject([FromBody] SubjectCreateRequest request)
+    [SwaggerOperation(
+        Summary = "Create a new subject",
+        Description = "Creates a new subject with the provided information.")]
+    [ProducesResponseType(typeof(ApiResult<SubjectResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    public async Task<IActionResult> CreateSubject(
+        [FromBody, SwaggerParameter("New subject data to be created")] SubjectCreateRequest request)
     {
-        var created = await _service.CreateSubjectAsync(request);
-        return CreatedAtAction(nameof(GetSubject), new { id = created.SubjectId }, ApiResult<SubjectResponse>.Success(created, "201", "Created successfully"));
+        var result = await _subjectService.CreateSubjectAsync(request);
+
+        return CreatedAtAction(
+            nameof(GetSubjectById),
+            new { id = result.SubjectId },
+            ApiResult<SubjectResponse>.Success(result, "201", "Subject created successfully."));
     }
+
+    // =========================================================================
+    // UPDATE  —  PUT /api/subjects/{id}         // =========================================================================
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateSubject(int id, [FromBody] SubjectUpdateRequest request)
+    [SwaggerOperation(
+        Summary = "Update subject information",
+        Description = "Updates the details of a specific subject by ID.")]
+    [ProducesResponseType(typeof(ApiResult<SubjectResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    public async Task<IActionResult> UpdateSubject(
+        [FromRoute] int id,
+        [FromBody, SwaggerParameter("Updated subject data")] SubjectUpdateRequest request)
     {
-        var updated = await _service.UpdateSubjectAsync(id, request);
-        return Ok(ApiResult<SubjectResponse>.Success(updated, "200", "Updated successfully"));
+        if (request == null)
+        {
+            return BadRequest(ApiResult<object>.Failure("400", "Subject update data is required."));
+        }
+
+        var result = await _subjectService.UpdateSubjectAsync(id, request);
+
+        return Ok(ApiResult<SubjectResponse>.Success(result, "200", "Subject updated successfully."));
     }
 
+    // =========================================================================
+    // DELETE  —  DELETE /api/subjects/{id}      // =========================================================================
+
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteSubject(int id)
+    [SwaggerOperation(
+        Summary = "Delete a subject",
+        Description = "Deletes a subject by ID.")]
+    [ProducesResponseType(typeof(ApiResult<bool>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    public async Task<IActionResult> DeleteSubject([FromRoute] int id)
     {
-        await _service.DeleteSubjectAsync(id);
-        return Ok(ApiResult<object>.Success(null!, "200", "Deleted successfully"));
+        await _subjectService.DeleteSubjectAsync(id);
+
+        return Ok(ApiResult<bool>.Success(true, "200", "Subject deleted successfully."));
     }
 }

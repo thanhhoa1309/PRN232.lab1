@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Prn232.Lab1.Repositories;
 using Prn232.Lab1.Repositories.Domain;
 using Prn232.Lab1.Service.Utils;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[ApiController]
 [Route("api/system")]
+[ApiController]
 public class SystemController : ControllerBase
 {
     private const int MinSemesters = 5;
@@ -23,7 +24,15 @@ public class SystemController : ControllerBase
         _dbContext = dbContext;
     }
 
+    // =========================================================================
+    // SEED DATA  —  POST /api/system/seed
+    // =========================================================================
+
     [HttpPost("seed")]
+    [SwaggerOperation(
+        Summary = "Seed sample data",
+        Description = "Populates the database with sample semesters, subjects, students, courses, and enrollments.")]
+    [ProducesResponseType(typeof(ApiResult<object>), 200)]
     public async Task<IActionResult> SeedData()
     {
         if (await _dbContext.Semesters.AnyAsync()
@@ -104,7 +113,15 @@ public class SystemController : ControllerBase
         return Ok(ApiResult<object>.Success(summary, "200", "Seed data created."));
     }
 
+    // =========================================================================
+    // CLEAR DATA  —  DELETE /api/system/clear
+    // =========================================================================
+
     [HttpDelete("clear")]
+    [SwaggerOperation(
+        Summary = "Clear all data",
+        Description = "Removes all semesters, subjects, students, courses, and enrollments from the database.")]
+    [ProducesResponseType(typeof(ApiResult<object>), 200)]
     public async Task<IActionResult> ClearData()
     {
         _dbContext.Enrollments.RemoveRange(_dbContext.Enrollments);

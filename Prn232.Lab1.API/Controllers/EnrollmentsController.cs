@@ -2,58 +2,125 @@ using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Enrollments;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Utils;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[ApiController]
 [Route("api/enrollments")]
+[ApiController]
 public class EnrollmentsController : ControllerBase
 {
-    private readonly IEnrollmentService _service;
+    private readonly IEnrollmentService _enrollmentService;
 
-    public EnrollmentsController(IEnrollmentService service)
+    public EnrollmentsController(IEnrollmentService enrollmentService)
     {
-        _service = service;
+        _enrollmentService = enrollmentService;
     }
+
+    // =========================================================================
+    // GET ALL  —  GET /api/enrollments
+    // =========================================================================
 
     [HttpGet]
-    public async Task<IActionResult> GetEnrollments(
-        [FromQuery] string? search,
-        [FromQuery] string? sortBy,
-        [FromQuery] bool isDescending = false,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? expand = null)
+    [SwaggerOperation(
+        Summary = "Get all enrollments",
+        Description = "Retrieve a paginated list of enrollments with optional search, sort, and expand options.")]
+    [ProducesResponseType(typeof(ApiResult<Pagination<EnrollmentResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+    public async Task<IActionResult> GetAllEnrollments(
+        [FromQuery, SwaggerParameter(Description = "Search by enrollment status (optional)")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort by field: enrollmentId, studentId, courseId, enrollDate, status (optional)")] string? sortBy = null,
+        [FromQuery, SwaggerParameter(Description = "Sort in descending order? Default: false")] bool isDescending = false,
+        [FromQuery, SwaggerParameter(Description = "Page number, starting from 1")] int page = 1,
+        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. student, course (optional)")] string? expand = null)
     {
-        var result = await _service.GetEnrollmentsAsync(search, sortBy, isDescending, page, pageSize, expand);
-        return Ok(ApiResult<Pagination<EnrollmentResponse>>.Success(result));
+        if (page < 1 || pageSize < 1)
+        {
+            return BadRequest(ApiResult<object>.Failure("400", "Invalid pagination parameters."));
+        }
+
+        var result = await _enrollmentService.GetEnrollmentsAsync(search, sortBy, isDescending, page, pageSize, expand);
+
+        return Ok(ApiResult<Pagination<EnrollmentResponse>>.Success(result, "200", "Enrollments retrieved successfully."));
     }
+
+    // =========================================================================
+    // GET BY ID  —  GET /api/enrollments/{id}
+    // =========================================================================
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetEnrollment(int id)
+    [SwaggerOperation(
+        Summary = "Get enrollment details",
+        Description = "Retrieve detailed information for a specific enrollment by ID.")]
+    [ProducesResponseType(typeof(ApiResult<EnrollmentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    public async Task<IActionResult> GetEnrollmentById([FromRoute] int id)
     {
-        var enrollment = await _service.GetEnrollmentByIdAsync(id);
-        return Ok(ApiResult<EnrollmentResponse>.Success(enrollment));
+        var result = await _enrollmentService.GetEnrollmentByIdAsync(id);
+
+        return Ok(ApiResult<EnrollmentResponse>.Success(result, "200", "Enrollment retrieved successfully."));
     }
+
+    // =========================================================================
+    // CREATE  —  POST /api/enrollments    // =========================================================================
 
     [HttpPost]
-    public async Task<IActionResult> CreateEnrollment([FromBody] EnrollmentCreateRequest request)
+    [SwaggerOperation(
+        Summary = "Create a new enrollment",
+        Description = "Creates a new enrollment with the provided information.")]
+    [ProducesResponseType(typeof(ApiResult<EnrollmentResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    public async Task<IActionResult> CreateEnrollment(
+        [FromBody, SwaggerParameter("New enrollment data to be created")] EnrollmentCreateRequest request)
     {
-        var created = await _service.CreateEnrollmentAsync(request);
-        return CreatedAtAction(nameof(GetEnrollment), new { id = created.EnrollmentId }, ApiResult<EnrollmentResponse>.Success(created, "201", "Created successfully"));
+        var result = await _enrollmentService.CreateEnrollmentAsync(request);
+
+        return CreatedAtAction(
+            nameof(GetEnrollmentById),
+            new { id = result.EnrollmentId },
+            ApiResult<EnrollmentResponse>.Success(result, "201", "Enrollment created successfully."));
     }
+
+    // =========================================================================
+    // UPDATE  —  PUT /api/enrollments/{id}         // =========================================================================
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateEnrollment(int id, [FromBody] EnrollmentUpdateRequest request)
+    [SwaggerOperation(
+        Summary = "Update enrollment information",
+        Description = "Updates the details of a specific enrollment by ID.")]
+    [ProducesResponseType(typeof(ApiResult<EnrollmentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    public async Task<IActionResult> UpdateEnrollment(
+        [FromRoute] int id,
+        [FromBody, SwaggerParameter("Updated enrollment data")] EnrollmentUpdateRequest request)
     {
-        var updated = await _service.UpdateEnrollmentAsync(id, request);
-        return Ok(ApiResult<EnrollmentResponse>.Success(updated, "200", "Updated successfully"));
+        if (request == null)
+        {
+            return BadRequest(ApiResult<object>.Failure("400", "Enrollment update data is required."));
+        }
+
+        var result = await _enrollmentService.UpdateEnrollmentAsync(id, request);
+
+        return Ok(ApiResult<EnrollmentResponse>.Success(result, "200", "Enrollment updated successfully."));
     }
 
+    // =========================================================================
+    // DELETE  —  DELETE /api/enrollments/{id}      // =========================================================================
+
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteEnrollment(int id)
+    [SwaggerOperation(
+        Summary = "Delete an enrollment",
+        Description = "Deletes an enrollment by ID.")]
+    [ProducesResponseType(typeof(ApiResult<bool>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    public async Task<IActionResult> DeleteEnrollment([FromRoute] int id)
     {
-        await _service.DeleteEnrollmentAsync(id);
-        return Ok(ApiResult<object>.Success(null!, "200", "Deleted successfully"));
+        await _enrollmentService.DeleteEnrollmentAsync(id);
+
+        return Ok(ApiResult<bool>.Success(true, "200", "Enrollment deleted successfully."));
     }
 }
