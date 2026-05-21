@@ -31,18 +31,11 @@ public class SystemController : ControllerBase
     [HttpPost("seed")]
     [SwaggerOperation(
         Summary = "Seed sample data",
-        Description = "Populates the database with sample semesters, subjects, students, courses, and enrollments.")]
+        Description = "Clears existing data and populates semesters, subjects, students, courses (with SemesterId), and enrollments.")]
     [ProducesResponseType(typeof(ApiResult<object>), 200)]
     public async Task<IActionResult> SeedData()
     {
-        if (await _dbContext.Semesters.AnyAsync()
-            || await _dbContext.Subjects.AnyAsync()
-            || await _dbContext.Students.AnyAsync()
-            || await _dbContext.Courses.AnyAsync()
-            || await _dbContext.Enrollments.AnyAsync())
-        {
-            return Ok(ApiResult<object>.Success(new { message = "Data already seeded." }, "200", "Data already seeded."));
-        }
+        await ClearDataInternalAsync();
 
         var random = new Random(2026);
 
@@ -73,30 +66,34 @@ public class SystemController : ControllerBase
             })
             .ToList();
 
+        await _dbContext.Semesters.AddRangeAsync(semesters);
+        await _dbContext.Subjects.AddRangeAsync(subjects);
+        await _dbContext.Students.AddRangeAsync(students);
+        await _dbContext.SaveChangesAsync();
+
         var courses = Enumerable.Range(1, MinCourses)
             .Select(i => new Course
             {
-                CourseName = $"{subjects[(i - 1) % subjects.Count].SubjectCode} - Class {(i - 1) / subjects.Count + 1}",
-                Semester = semesters[(i - 1) % semesters.Count]
+                CourseName = $"{subjects[(i - 1) % subjects.Count].SubjectName} - Class {(i - 1) / subjects.Count + 1}",
+                SemesterId = semesters[(i - 1) % semesters.Count].SemesterId
             })
             .ToList();
+
+        await _dbContext.Courses.AddRangeAsync(courses);
+        await _dbContext.SaveChangesAsync();
 
         var enrollments = new List<Enrollment>();
         for (var i = 1; i <= MinEnrollments; i++)
         {
             enrollments.Add(new Enrollment
             {
-                Student = students[random.Next(students.Count)],
-                Course = courses[random.Next(courses.Count)],
+                StudentId = students[random.Next(students.Count)].StudentId,
+                CourseId = courses[random.Next(courses.Count)].CourseId,
                 EnrollDate = DateTime.UtcNow.AddDays(-random.Next(0, 365)),
                 Status = random.Next(0, 2) == 0 ? "Active" : "Completed"
             });
         }
 
-        await _dbContext.Semesters.AddRangeAsync(semesters);
-        await _dbContext.Subjects.AddRangeAsync(subjects);
-        await _dbContext.Students.AddRangeAsync(students);
-        await _dbContext.Courses.AddRangeAsync(courses);
         await _dbContext.Enrollments.AddRangeAsync(enrollments);
         await _dbContext.SaveChangesAsync();
 
@@ -124,6 +121,13 @@ public class SystemController : ControllerBase
     [ProducesResponseType(typeof(ApiResult<object>), 200)]
     public async Task<IActionResult> ClearData()
     {
+        await ClearDataInternalAsync();
+
+        return Ok(ApiResult<object>.Success(new { message = "Data cleared." }, "200", "Data cleared."));
+    }
+
+    private async Task ClearDataInternalAsync()
+    {
         _dbContext.Enrollments.RemoveRange(_dbContext.Enrollments);
         _dbContext.Courses.RemoveRange(_dbContext.Courses);
         _dbContext.Students.RemoveRange(_dbContext.Students);
@@ -131,7 +135,5 @@ public class SystemController : ControllerBase
         _dbContext.Semesters.RemoveRange(_dbContext.Semesters);
 
         await _dbContext.SaveChangesAsync();
-
-        return Ok(ApiResult<object>.Success(new { message = "Data cleared." }, "200", "Data cleared."));
     }
 }

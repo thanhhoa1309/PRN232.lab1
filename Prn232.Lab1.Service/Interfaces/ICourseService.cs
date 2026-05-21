@@ -13,7 +13,8 @@ public interface ICourseService
         int pageSize,
         string? expand);
 
-    Task<CourseResponse> GetCourseByIdAsync(int id);
+    Task<CourseResponse> GetCourseByDetailAsync(int id);
+    Task<CourseResponse> GetEnrollmentByCourseAsync(int id);
     Task<CourseResponse> CreateCourseAsync(CourseCreateRequest request);
     Task<CourseResponse> UpdateCourseAsync(int id, CourseUpdateRequest request);
     Task DeleteCourseAsync(int id);

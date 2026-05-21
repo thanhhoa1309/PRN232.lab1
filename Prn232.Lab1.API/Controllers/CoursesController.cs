@@ -52,12 +52,29 @@ public class CoursesController : ControllerBase
     [HttpGet("{id:int}")]
     [SwaggerOperation(
         Summary = "Get course details",
-        Description = "Retrieve detailed information for a specific course by ID.")]
+        Description = "Retrieve detailed information for a specific course by ID, including semester.")]
     [ProducesResponseType(typeof(ApiResult<CourseResponse>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    public async Task<IActionResult> GetCourseById([FromRoute] int id)
+    public async Task<IActionResult> GetCourseByDetail([FromRoute] int id)
     {
-        var result = await _courseService.GetCourseByIdAsync(id);
+        var result = await _courseService.GetCourseByDetailAsync(id);
+
+        return Ok(ApiResult<CourseResponse>.Success(result, "200", "Course retrieved successfully."));
+    }
+
+    // =========================================================================
+    // GET ENROLLMENT BY COURSE  —  GET /api/courses/enrollment/{id}
+    // =========================================================================
+
+    [HttpGet("enrollment/{id:int}")]
+    [SwaggerOperation(
+        Summary = "Get course details",
+        Description = "Retrieve course by ID, including enrolled students and enrollments.")]
+    [ProducesResponseType(typeof(ApiResult<CourseResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    public async Task<IActionResult> GetEnrollmentByCourse([FromRoute] int id)
+    {
+        var result = await _courseService.GetEnrollmentByCourseAsync(id);
 
         return Ok(ApiResult<CourseResponse>.Success(result, "200", "Course retrieved successfully."));
     }
@@ -78,7 +95,7 @@ public class CoursesController : ControllerBase
         var result = await _courseService.CreateCourseAsync(request);
 
         return CreatedAtAction(
-            nameof(GetCourseById),
+            nameof(GetCourseByDetail),
             new { id = result.CourseId },
             ApiResult<CourseResponse>.Success(result, "201", "Course created successfully."));
     }
