@@ -6,6 +6,7 @@ using Prn232.Lab1.Repositories;
 using Prn232.Lab1.Repositories.Interfaces;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Service;
+using Prn232.Lab1.Service.Utils;
 using System.Text;
 
 namespace FUNewsManagementSystem.Architecture
@@ -37,6 +38,8 @@ namespace FUNewsManagementSystem.Architecture
             services.AddScoped<ISemesterService, SemesterService>();
             services.AddScoped<ISubjectService, SubjectService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
+            services.AddSingleton<PasswordHasher>();
+            services.AddScoped<IUserService, UserService>();
             // Add JWT Authentication
             services.SetupJwt(configuration);
 

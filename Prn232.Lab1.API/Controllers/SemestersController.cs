@@ -25,7 +25,7 @@ public class SemestersController : ControllerBase
     [SwaggerOperation(
         Summary = "Get all semesters",
         Description = "Retrieve a paginated list of semesters with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<SemesterResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<Pagination<SemesterResponseDto>>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     public async Task<IActionResult> GetAllSemesters(
         [FromQuery, SwaggerParameter(Description = "Search by semester name (optional)")] string? search = null,
@@ -42,7 +42,7 @@ public class SemestersController : ControllerBase
 
         var result = await _semesterService.GetSemestersAsync(search, sortBy, isDescending, page, pageSize, expand);
 
-        return Ok(ApiResult<Pagination<SemesterResponse>>.Success(result, "200", "Semesters retrieved successfully."));
+        return Ok(ApiResult<Pagination<SemesterResponseDto>>.Success(result, "200", "Semesters retrieved successfully."));
     }
 
     // =========================================================================
@@ -53,13 +53,13 @@ public class SemestersController : ControllerBase
     [SwaggerOperation(
         Summary = "Get semester details",
         Description = "Retrieve detailed information for a specific semester by ID.")]
-    [ProducesResponseType(typeof(ApiResult<SemesterResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<SemesterResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> GetSemesterById([FromRoute] int id)
     {
         var result = await _semesterService.GetSemesterByIdAsync(id);
 
-        return Ok(ApiResult<SemesterResponse>.Success(result, "200", "Semester retrieved successfully."));
+        return Ok(ApiResult<SemesterResponseDto>.Success(result, "200", "Semester retrieved successfully."));
     }
 
     // =========================================================================
@@ -69,18 +69,18 @@ public class SemestersController : ControllerBase
     [SwaggerOperation(
         Summary = "Create a new semester",
         Description = "Creates a new semester with the provided information.")]
-    [ProducesResponseType(typeof(ApiResult<SemesterResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<SemesterResponseDto>), 201)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> CreateSemester(
-        [FromBody, SwaggerParameter("New semester data to be created")] SemesterCreateRequest request)
+        [FromBody, SwaggerParameter("New semester data to be created")] SemesterCreateRequestDto request)
     {
         var result = await _semesterService.CreateSemesterAsync(request);
 
         return CreatedAtAction(
             nameof(GetSemesterById),
             new { id = result.SemesterId },
-            ApiResult<SemesterResponse>.Success(result, "201", "Semester created successfully."));
+            ApiResult<SemesterResponseDto>.Success(result, "201", "Semester created successfully."));
     }
 
     // =========================================================================
@@ -90,13 +90,13 @@ public class SemestersController : ControllerBase
     [SwaggerOperation(
         Summary = "Update semester information",
         Description = "Updates the details of a specific semester by ID.")]
-    [ProducesResponseType(typeof(ApiResult<SemesterResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<SemesterResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> UpdateSemester(
         [FromRoute] int id,
-        [FromBody, SwaggerParameter("Updated semester data")] SemesterUpdateRequest request)
+        [FromBody, SwaggerParameter("Updated semester data")] SemesterUpdateRequestDto request)
     {
         if (request == null)
         {
@@ -105,7 +105,7 @@ public class SemestersController : ControllerBase
 
         var result = await _semesterService.UpdateSemesterAsync(id, request);
 
-        return Ok(ApiResult<SemesterResponse>.Success(result, "200", "Semester updated successfully."));
+        return Ok(ApiResult<SemesterResponseDto>.Success(result, "200", "Semester updated successfully."));
     }
 
     // =========================================================================

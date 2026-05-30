@@ -13,7 +13,8 @@ namespace Prn232.Lab1.Repositories
             IGenericRepository<Course> courseRepository,
             IGenericRepository<Enrollment> enrollmentRepository,
             IGenericRepository<Semester> semesterRepository,
-            IGenericRepository<Subject> subjectRepository)
+            IGenericRepository<Subject> subjectRepository,
+            IGenericRepository<User> userRepository)
         {
             _dbContext = dbContext;
             StudentRepository = studentRepository;
@@ -21,6 +22,7 @@ namespace Prn232.Lab1.Repositories
             EnrollmentRepository = enrollmentRepository;
             SemesterRepository = semesterRepository;
             SubjectRepository = subjectRepository;
+            UserRepository = userRepository;
         }
 
         public IGenericRepository<Student> StudentRepository { get; }
@@ -28,6 +30,7 @@ namespace Prn232.Lab1.Repositories
         public IGenericRepository<Enrollment> EnrollmentRepository { get; }
         public IGenericRepository<Semester> SemesterRepository { get; }
         public IGenericRepository<Subject> SubjectRepository { get; }
+        public IGenericRepository<User> UserRepository { get; }
 
         public async Task<int> SaveChangesAsync()
         {

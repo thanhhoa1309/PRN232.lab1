@@ -25,7 +25,7 @@ public class EnrollmentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Get all enrollments",
         Description = "Retrieve a paginated list of enrollments with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<EnrollmentResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<Pagination<EnrollmentResponseDto>>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     public async Task<IActionResult> GetAllEnrollments(
         [FromQuery, SwaggerParameter(Description = "Search by enrollment status (optional)")] string? search = null,
@@ -42,7 +42,7 @@ public class EnrollmentsController : ControllerBase
 
         var result = await _enrollmentService.GetEnrollmentsAsync(search, sortBy, isDescending, page, pageSize, expand);
 
-        return Ok(ApiResult<Pagination<EnrollmentResponse>>.Success(result, "200", "Enrollments retrieved successfully."));
+        return Ok(ApiResult<Pagination<EnrollmentResponseDto>>.Success(result, "200", "Enrollments retrieved successfully."));
     }
 
     // =========================================================================
@@ -53,13 +53,13 @@ public class EnrollmentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Get enrollment details",
         Description = "Retrieve detailed information for a specific enrollment by ID.")]
-    [ProducesResponseType(typeof(ApiResult<EnrollmentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<EnrollmentResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> GetEnrollmentById([FromRoute] int id)
     {
         var result = await _enrollmentService.GetEnrollmentByIdAsync(id);
 
-        return Ok(ApiResult<EnrollmentResponse>.Success(result, "200", "Enrollment retrieved successfully."));
+        return Ok(ApiResult<EnrollmentResponseDto>.Success(result, "200", "Enrollment retrieved successfully."));
     }
 
     // =========================================================================
@@ -69,18 +69,18 @@ public class EnrollmentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Create a new enrollment",
         Description = "Creates a new enrollment with the provided information.")]
-    [ProducesResponseType(typeof(ApiResult<EnrollmentResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<EnrollmentResponseDto>), 201)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> CreateEnrollment(
-        [FromBody, SwaggerParameter("New enrollment data to be created")] EnrollmentCreateRequest request)
+        [FromBody, SwaggerParameter("New enrollment data to be created")] EnrollmentCreateRequestDto request)
     {
         var result = await _enrollmentService.CreateEnrollmentAsync(request);
 
         return CreatedAtAction(
             nameof(GetEnrollmentById),
             new { id = result.EnrollmentId },
-            ApiResult<EnrollmentResponse>.Success(result, "201", "Enrollment created successfully."));
+            ApiResult<EnrollmentResponseDto>.Success(result, "201", "Enrollment created successfully."));
     }
 
     // =========================================================================
@@ -90,13 +90,13 @@ public class EnrollmentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Update enrollment information",
         Description = "Updates the details of a specific enrollment by ID.")]
-    [ProducesResponseType(typeof(ApiResult<EnrollmentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<EnrollmentResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> UpdateEnrollment(
         [FromRoute] int id,
-        [FromBody, SwaggerParameter("Updated enrollment data")] EnrollmentUpdateRequest request)
+        [FromBody, SwaggerParameter("Updated enrollment data")] EnrollmentUpdateRequestDto request)
     {
         if (request == null)
         {
@@ -105,7 +105,7 @@ public class EnrollmentsController : ControllerBase
 
         var result = await _enrollmentService.UpdateEnrollmentAsync(id, request);
 
-        return Ok(ApiResult<EnrollmentResponse>.Success(result, "200", "Enrollment updated successfully."));
+        return Ok(ApiResult<EnrollmentResponseDto>.Success(result, "200", "Enrollment updated successfully."));
     }
 
     // =========================================================================

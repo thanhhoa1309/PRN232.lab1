@@ -9,6 +9,7 @@ namespace Prn232.Lab1.Repositories.Interfaces
         IGenericRepository<Enrollment> EnrollmentRepository { get; }
         IGenericRepository<Semester> SemesterRepository { get; }
         IGenericRepository<Subject> SubjectRepository { get; }
+        IGenericRepository<User> UserRepository { get; }
 
         Task<int> SaveChangesAsync();
     }

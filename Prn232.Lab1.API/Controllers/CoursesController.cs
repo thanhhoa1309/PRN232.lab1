@@ -25,7 +25,7 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
         Summary = "Get all courses",
         Description = "Retrieve a paginated list of courses with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<CourseResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<Pagination<CourseResponseDto>>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     public async Task<IActionResult> GetAllCourses(
         [FromQuery, SwaggerParameter(Description = "Search by course name (optional)")] string? search = null,
@@ -42,7 +42,7 @@ public class CoursesController : ControllerBase
 
         var result = await _courseService.GetCoursesAsync(search, sortBy, isDescending, page, pageSize, expand);
 
-        return Ok(ApiResult<Pagination<CourseResponse>>.Success(result, "200", "Courses retrieved successfully."));
+        return Ok(ApiResult<Pagination<CourseResponseDto>>.Success(result, "200", "Courses retrieved successfully."));
     }
 
     // =========================================================================
@@ -53,13 +53,13 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
         Summary = "Get course details",
         Description = "Retrieve detailed information for a specific course by ID, including semester.")]
-    [ProducesResponseType(typeof(ApiResult<CourseResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> GetCourseByDetail([FromRoute] int id)
     {
         var result = await _courseService.GetCourseByDetailAsync(id);
 
-        return Ok(ApiResult<CourseResponse>.Success(result, "200", "Course retrieved successfully."));
+        return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course retrieved successfully."));
     }
 
     // =========================================================================
@@ -70,13 +70,13 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
         Summary = "Get course details",
         Description = "Retrieve course by ID, including enrolled students and enrollments.")]
-    [ProducesResponseType(typeof(ApiResult<CourseResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> GetEnrollmentByCourse([FromRoute] int id)
     {
         var result = await _courseService.GetEnrollmentByCourseAsync(id);
 
-        return Ok(ApiResult<CourseResponse>.Success(result, "200", "Course retrieved successfully."));
+        return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course retrieved successfully."));
     }
 
     // =========================================================================
@@ -86,18 +86,18 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
         Summary = "Create a new course",
         Description = "Creates a new course with the provided information.")]
-    [ProducesResponseType(typeof(ApiResult<CourseResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 201)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> CreateCourse(
-        [FromBody, SwaggerParameter("New course data to be created")] CourseCreateRequest request)
+        [FromBody, SwaggerParameter("New course data to be created")] CourseCreateRequestDto request)
     {
         var result = await _courseService.CreateCourseAsync(request);
 
         return CreatedAtAction(
             nameof(GetCourseByDetail),
             new { id = result.CourseId },
-            ApiResult<CourseResponse>.Success(result, "201", "Course created successfully."));
+            ApiResult<CourseResponseDto>.Success(result, "201", "Course created successfully."));
     }
 
     // =========================================================================
@@ -107,13 +107,13 @@ public class CoursesController : ControllerBase
     [SwaggerOperation(
         Summary = "Update course information",
         Description = "Updates the details of a specific course by ID.")]
-    [ProducesResponseType(typeof(ApiResult<CourseResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> UpdateCourse(
         [FromRoute] int id,
-        [FromBody, SwaggerParameter("Updated course data")] CourseUpdateRequest request)
+        [FromBody, SwaggerParameter("Updated course data")] CourseUpdateRequestDto request)
     {
         if (request == null)
         {
@@ -122,7 +122,7 @@ public class CoursesController : ControllerBase
 
         var result = await _courseService.UpdateCourseAsync(id, request);
 
-        return Ok(ApiResult<CourseResponse>.Success(result, "200", "Course updated successfully."));
+        return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course updated successfully."));
     }
 
     // =========================================================================

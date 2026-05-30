@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Prn232.Lab1.Repositories.Domain;
 using Prn232.Lab1.Repositories.Interfaces;
+using Prn232.Lab1.Service.Dtos.Courses;
 using Prn232.Lab1.Service.Dtos.Semesters;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Utils;
@@ -17,7 +18,7 @@ public class SemesterService : ISemesterService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<SemesterResponse>> GetSemestersAsync(
+    public async Task<Pagination<SemesterResponseDto>> GetSemestersAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -48,12 +49,30 @@ public class SemesterService : ISemesterService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(s => SemesterListDto.FromEntity(s, expand)).ToList();
 
-        return new Pagination<SemesterResponse>(responses, totalCount, page, pageSize);
+        var includeCourses = !string.IsNullOrWhiteSpace(expand)
+            && expand.Contains("courses", StringComparison.OrdinalIgnoreCase);
+
+        var responses = items.Select(s => new SemesterResponseDto
+        {
+            SemesterId = s.SemesterId,
+            SemesterName = s.SemesterName,
+            StartDate = s.StartDate,
+            EndDate = s.EndDate,
+            Courses = includeCourses
+                ? s.Courses?.Select(c => new CourseResponseDto
+                {
+                    CourseId = c.CourseId,
+                    CourseName = c.CourseName,
+                    SemesterId = c.SemesterId
+                }).ToList()
+                : null
+        }).ToList();
+
+        return new Pagination<SemesterResponseDto>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<SemesterResponse> GetSemesterByIdAsync(int id)
+    public async Task<SemesterResponseDto> GetSemesterByIdAsync(int id)
     {
         var entity = await _unitOfWork.SemesterRepository.GetByIdAsync(id);
         if (entity == null)
@@ -61,17 +80,43 @@ public class SemesterService : ISemesterService
             throw ErrorHelper.NotFound("Semester not found.");
         }
 
-        return SemesterListDto.FromEntity(entity);
+        return new SemesterResponseDto
+        {
+            SemesterId = entity.SemesterId,
+            SemesterName = entity.SemesterName,
+            StartDate = entity.StartDate,
+            EndDate = entity.EndDate
+        };
     }
 
-    public async Task<SemesterResponse> CreateSemesterAsync(SemesterCreateRequest request)
+    public async Task<SemesterResponseDto> CreateSemesterAsync(SemesterCreateRequestDto request)
     {
-        var entity = SemesterCreateDto.ToEntity(request);
+        if (string.IsNullOrWhiteSpace(request.SemesterName))
+        {
+            throw ErrorHelper.BadRequest("SemesterName is required.");
+        }
+
+        ResourceHelper.DateTimeValidate(request.StartDate, request.EndDate);
+
+        var entity = new Semester
+        {
+            SemesterName = request.SemesterName.Trim(),
+            StartDate = request.StartDate,
+            EndDate = request.EndDate
+        };
+
         await _unitOfWork.SemesterRepository.CreateAsync(entity);
-        return SemesterCreateDto.FromEntity(entity);
+
+        return new SemesterResponseDto
+        {
+            SemesterId = entity.SemesterId,
+            SemesterName = entity.SemesterName,
+            StartDate = entity.StartDate,
+            EndDate = entity.EndDate
+        };
     }
 
-    public async Task<SemesterResponse> UpdateSemesterAsync(int id, SemesterUpdateRequest request)
+    public async Task<SemesterResponseDto> UpdateSemesterAsync(int id, SemesterUpdateRequestDto request)
     {
         var existing = await _unitOfWork.SemesterRepository.GetByIdAsync(id);
         if (existing == null)
@@ -79,9 +124,22 @@ public class SemesterService : ISemesterService
             throw ErrorHelper.NotFound("Semester not found.");
         }
 
-        SemesterUpdateDto.Apply(existing, request);
+        UpdateHelper.ApplyUpdates(existing, request);
+
+        if (existing.StartDate != default && existing.EndDate != default)
+        {
+            ResourceHelper.DateTimeValidate(existing.StartDate, existing.EndDate);
+        }
+
         await _unitOfWork.SemesterRepository.UpdateAsync(existing);
-        return SemesterUpdateDto.FromEntity(existing);
+
+        return new SemesterResponseDto
+        {
+            SemesterId = existing.SemesterId,
+            SemesterName = existing.SemesterName,
+            StartDate = existing.StartDate,
+            EndDate = existing.EndDate
+        };
     }
 
     public async Task DeleteSemesterAsync(int id)

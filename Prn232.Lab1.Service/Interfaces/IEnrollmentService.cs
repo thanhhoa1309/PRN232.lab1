@@ -5,7 +5,7 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface IEnrollmentService
 {
-    Task<Pagination<EnrollmentResponse>> GetEnrollmentsAsync(
+    Task<Pagination<EnrollmentResponseDto>> GetEnrollmentsAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -13,8 +13,8 @@ public interface IEnrollmentService
         int pageSize,
         string? expand);
 
-    Task<EnrollmentResponse> GetEnrollmentByIdAsync(int id);
-    Task<EnrollmentResponse> CreateEnrollmentAsync(EnrollmentCreateRequest request);
-    Task<EnrollmentResponse> UpdateEnrollmentAsync(int id, EnrollmentUpdateRequest request);
+    Task<EnrollmentResponseDto> GetEnrollmentByIdAsync(int id);
+    Task<EnrollmentResponseDto> CreateEnrollmentAsync(EnrollmentCreateRequestDto request);
+    Task<EnrollmentResponseDto> UpdateEnrollmentAsync(int id, EnrollmentUpdateRequestDto request);
     Task DeleteEnrollmentAsync(int id);
 }

@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Prn232.Lab1.Repositories.Domain;
 using Prn232.Lab1.Repositories.Interfaces;
-using Prn232.Lab1.Service.Dtos;
 using Prn232.Lab1.Service.Dtos.Courses;
+using Prn232.Lab1.Service.Dtos.Enrollments;
+using Prn232.Lab1.Service.Dtos.Semesters;
+using Prn232.Lab1.Service.Dtos.Students;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Utils;
 
@@ -17,7 +19,7 @@ public class CourseService : ICourseService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<CourseResponse>> GetCoursesAsync(
+    public async Task<Pagination<CourseResponseDto>> GetCoursesAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -59,13 +61,13 @@ public class CourseService : ICourseService
             .Take(pageSize)
             .ToListAsync();
 
-        var responses = items.Select(c => new CourseResponse
+        var responses = items.Select(c => new CourseResponseDto
         {
             CourseId = c.CourseId,
             CourseName = c.CourseName,
             SemesterId = c.SemesterId,
             Semester = includeSemester && c.Semester != null
-                ? new SemesterSummaryResponse
+                ? new SemesterResponseDto
                 {
                     SemesterId = c.Semester.SemesterId,
                     SemesterName = c.Semester.SemesterName,
@@ -75,10 +77,10 @@ public class CourseService : ICourseService
                 : null
         }).ToList();
 
-        return new Pagination<CourseResponse>(responses, totalCount, page, pageSize);
+        return new Pagination<CourseResponseDto>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<CourseResponse> GetCourseByDetailAsync(int id)
+    public async Task<CourseResponseDto> GetCourseByDetailAsync(int id)
     {
         var entity = await _unitOfWork.CourseRepository.GetAllAsQueryable()
             .Include(c => c.Semester)
@@ -89,13 +91,13 @@ public class CourseService : ICourseService
             throw ErrorHelper.NotFound("Course not found.");
         }
 
-        return new CourseResponse
+        return new CourseResponseDto
         {
             CourseId = entity.CourseId,
             CourseName = entity.CourseName,
             SemesterId = entity.SemesterId,
             Semester = entity.Semester != null
-                ? new SemesterSummaryResponse
+                ? new SemesterResponseDto
                 {
                     SemesterId = entity.Semester.SemesterId,
                     SemesterName = entity.Semester.SemesterName,
@@ -106,7 +108,7 @@ public class CourseService : ICourseService
         };
     }
 
-    public async Task<CourseResponse> GetEnrollmentByCourseAsync(int id)
+    public async Task<CourseResponseDto> GetEnrollmentByCourseAsync(int id)
     {
         var entity = await _unitOfWork.CourseRepository.GetAllAsQueryable()
             .Include(c => c.Semester)
@@ -119,13 +121,13 @@ public class CourseService : ICourseService
             throw ErrorHelper.NotFound("Course not found.");
         }
 
-        return new CourseResponse
+        return new CourseResponseDto
         {
             CourseId = entity.CourseId,
             CourseName = entity.CourseName,
             SemesterId = entity.SemesterId,
             Semester = entity.Semester != null
-                ? new SemesterSummaryResponse
+                ? new SemesterResponseDto
                 {
                     SemesterId = entity.Semester.SemesterId,
                     SemesterName = entity.Semester.SemesterName,
@@ -133,7 +135,7 @@ public class CourseService : ICourseService
                     EndDate = entity.Semester.EndDate
                 }
                 : null,
-            Enrollments = entity.Enrollments.Select(e => new EnrollmentSummaryResponse
+            Enrollments = entity.Enrollments.Select(e => new EnrollmentResponseDto
             {
                 EnrollmentId = e.EnrollmentId,
                 StudentId = e.StudentId,
@@ -143,7 +145,7 @@ public class CourseService : ICourseService
             }).ToList(),
             Students = entity.Enrollments
                 .Where(e => e.Student != null)
-                .Select(e => new StudentSummaryResponse
+                .Select(e => new StudentResponseDto
                 {
                     StudentId = e.Student!.StudentId,
                     FullName = e.Student.FullName,
@@ -154,7 +156,7 @@ public class CourseService : ICourseService
         };
     }
 
-    public async Task<CourseResponse> CreateCourseAsync(CourseCreateRequest request)
+    public async Task<CourseResponseDto> CreateCourseAsync(CourseCreateRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.CourseName))
         {
@@ -175,7 +177,7 @@ public class CourseService : ICourseService
 
         await _unitOfWork.CourseRepository.CreateAsync(entity);
 
-        return new CourseResponse
+        return new CourseResponseDto
         {
             CourseId = entity.CourseId,
             CourseName = entity.CourseName,
@@ -183,7 +185,7 @@ public class CourseService : ICourseService
         };
     }
 
-    public async Task<CourseResponse> UpdateCourseAsync(int id, CourseUpdateRequest request)
+    public async Task<CourseResponseDto> UpdateCourseAsync(int id, CourseUpdateRequestDto request)
     {
         var existing = await _unitOfWork.CourseRepository.GetByIdAsync(id);
         if (existing == null)
@@ -203,7 +205,7 @@ public class CourseService : ICourseService
         UpdateHelper.ApplyUpdates(existing, request);
         await _unitOfWork.CourseRepository.UpdateAsync(existing);
 
-        return new CourseResponse
+        return new CourseResponseDto
         {
             CourseId = existing.CourseId,
             CourseName = existing.CourseName,

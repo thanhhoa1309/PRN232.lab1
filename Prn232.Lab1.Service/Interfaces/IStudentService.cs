@@ -5,7 +5,7 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface IStudentService
 {
-    Task<Pagination<StudentResponse>> GetStudentsAsync(
+    Task<Pagination<StudentResponseDto>> GetStudentsAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -13,8 +13,8 @@ public interface IStudentService
         int pageSize,
         string? expand);
 
-    Task<StudentResponse> GetStudentByIdAsync(int id);
-    Task<StudentResponse> CreateStudentAsync(StudentCreateRequest request);
-    Task<StudentResponse> UpdateStudentAsync(int id, StudentUpdateRequest request);
+    Task<StudentResponseDto> GetStudentByIdAsync(int id);
+    Task<StudentResponseDto> CreateStudentAsync(StudentCreateRequestDto request);
+    Task<StudentResponseDto> UpdateStudentAsync(int id, StudentUpdateRequestDto request);
     Task DeleteStudentAsync(int id);
 }

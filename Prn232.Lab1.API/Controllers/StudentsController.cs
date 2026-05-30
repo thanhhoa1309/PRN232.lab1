@@ -25,7 +25,7 @@ public class StudentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Get all students",
         Description = "Retrieve a paginated list of students with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<StudentResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<Pagination<StudentResponseDto>>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     public async Task<IActionResult> GetAllStudents(
         [FromQuery, SwaggerParameter(Description = "Search by full name or email (optional)")] string? search = null,
@@ -42,7 +42,7 @@ public class StudentsController : ControllerBase
 
         var result = await _studentService.GetStudentsAsync(search, sortBy, isDescending, page, pageSize, expand);
 
-        return Ok(ApiResult<Pagination<StudentResponse>>.Success(result, "200", "Students retrieved successfully."));
+        return Ok(ApiResult<Pagination<StudentResponseDto>>.Success(result, "200", "Students retrieved successfully."));
     }
 
     // =========================================================================
@@ -53,13 +53,13 @@ public class StudentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Get student details",
         Description = "Retrieve detailed information for a specific student by ID.")]
-    [ProducesResponseType(typeof(ApiResult<StudentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<StudentResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> GetStudentById([FromRoute] int id)
     {
         var result = await _studentService.GetStudentByIdAsync(id);
 
-        return Ok(ApiResult<StudentResponse>.Success(result, "200", "Student retrieved successfully."));
+        return Ok(ApiResult<StudentResponseDto>.Success(result, "200", "Student retrieved successfully."));
     }
 
     // =========================================================================
@@ -69,18 +69,18 @@ public class StudentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Create a new student",
         Description = "Creates a new student with the provided information.")]
-    [ProducesResponseType(typeof(ApiResult<StudentResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<StudentResponseDto>), 201)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> CreateStudent(
-        [FromBody, SwaggerParameter("New student data to be created")] StudentCreateRequest request)
+        [FromBody, SwaggerParameter("New student data to be created")] StudentCreateRequestDto request)
     {
         var result = await _studentService.CreateStudentAsync(request);
 
         return CreatedAtAction(
             nameof(GetStudentById),
             new { id = result.StudentId },
-            ApiResult<StudentResponse>.Success(result, "201", "Student created successfully."));
+            ApiResult<StudentResponseDto>.Success(result, "201", "Student created successfully."));
     }
 
     // =========================================================================
@@ -90,13 +90,13 @@ public class StudentsController : ControllerBase
     [SwaggerOperation(
         Summary = "Update student information",
         Description = "Updates the details of a specific student by ID.")]
-    [ProducesResponseType(typeof(ApiResult<StudentResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<StudentResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> UpdateStudent(
         [FromRoute] int id,
-        [FromBody, SwaggerParameter("Updated student data")] StudentUpdateRequest request)
+        [FromBody, SwaggerParameter("Updated student data")] StudentUpdateRequestDto request)
     {
         if (request == null)
         {
@@ -105,7 +105,7 @@ public class StudentsController : ControllerBase
 
         var result = await _studentService.UpdateStudentAsync(id, request);
 
-        return Ok(ApiResult<StudentResponse>.Success(result, "200", "Student updated successfully."));
+        return Ok(ApiResult<StudentResponseDto>.Success(result, "200", "Student updated successfully."));
     }
 
     // =========================================================================

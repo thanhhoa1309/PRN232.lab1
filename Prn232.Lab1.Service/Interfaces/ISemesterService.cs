@@ -5,7 +5,7 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface ISemesterService
 {
-    Task<Pagination<SemesterResponse>> GetSemestersAsync(
+    Task<Pagination<SemesterResponseDto>> GetSemestersAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -13,8 +13,8 @@ public interface ISemesterService
         int pageSize,
         string? expand);
 
-    Task<SemesterResponse> GetSemesterByIdAsync(int id);
-    Task<SemesterResponse> CreateSemesterAsync(SemesterCreateRequest request);
-    Task<SemesterResponse> UpdateSemesterAsync(int id, SemesterUpdateRequest request);
+    Task<SemesterResponseDto> GetSemesterByIdAsync(int id);
+    Task<SemesterResponseDto> CreateSemesterAsync(SemesterCreateRequestDto request);
+    Task<SemesterResponseDto> UpdateSemesterAsync(int id, SemesterUpdateRequestDto request);
     Task DeleteSemesterAsync(int id);
 }

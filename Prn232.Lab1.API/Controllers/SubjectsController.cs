@@ -25,7 +25,7 @@ public class SubjectsController : ControllerBase
     [SwaggerOperation(
         Summary = "Get all subjects",
         Description = "Retrieve a paginated list of subjects with optional search and sort options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<SubjectResponse>>), 200)]
+    [ProducesResponseType(typeof(ApiResult<Pagination<SubjectResponseDto>>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     public async Task<IActionResult> GetAllSubjects(
         [FromQuery, SwaggerParameter(Description = "Search by subject name or code (optional)")] string? search = null,
@@ -42,7 +42,7 @@ public class SubjectsController : ControllerBase
 
         var result = await _subjectService.GetSubjectsAsync(search, sortBy, isDescending, page, pageSize, expand);
 
-        return Ok(ApiResult<Pagination<SubjectResponse>>.Success(result, "200", "Subjects retrieved successfully."));
+        return Ok(ApiResult<Pagination<SubjectResponseDto>>.Success(result, "200", "Subjects retrieved successfully."));
     }
 
     // =========================================================================
@@ -53,13 +53,13 @@ public class SubjectsController : ControllerBase
     [SwaggerOperation(
         Summary = "Get subject details",
         Description = "Retrieve detailed information for a specific subject by ID.")]
-    [ProducesResponseType(typeof(ApiResult<SubjectResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<SubjectResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> GetSubjectById([FromRoute] int id)
     {
         var result = await _subjectService.GetSubjectByIdAsync(id);
 
-        return Ok(ApiResult<SubjectResponse>.Success(result, "200", "Subject retrieved successfully."));
+        return Ok(ApiResult<SubjectResponseDto>.Success(result, "200", "Subject retrieved successfully."));
     }
 
     // =========================================================================
@@ -69,18 +69,18 @@ public class SubjectsController : ControllerBase
     [SwaggerOperation(
         Summary = "Create a new subject",
         Description = "Creates a new subject with the provided information.")]
-    [ProducesResponseType(typeof(ApiResult<SubjectResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResult<SubjectResponseDto>), 201)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> CreateSubject(
-        [FromBody, SwaggerParameter("New subject data to be created")] SubjectCreateRequest request)
+        [FromBody, SwaggerParameter("New subject data to be created")] SubjectCreateRequestDto request)
     {
         var result = await _subjectService.CreateSubjectAsync(request);
 
         return CreatedAtAction(
             nameof(GetSubjectById),
             new { id = result.SubjectId },
-            ApiResult<SubjectResponse>.Success(result, "201", "Subject created successfully."));
+            ApiResult<SubjectResponseDto>.Success(result, "201", "Subject created successfully."));
     }
 
     // =========================================================================
@@ -90,13 +90,13 @@ public class SubjectsController : ControllerBase
     [SwaggerOperation(
         Summary = "Update subject information",
         Description = "Updates the details of a specific subject by ID.")]
-    [ProducesResponseType(typeof(ApiResult<SubjectResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResult<SubjectResponseDto>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 400)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     [ProducesResponseType(typeof(ApiResult<object>), 409)]
     public async Task<IActionResult> UpdateSubject(
         [FromRoute] int id,
-        [FromBody, SwaggerParameter("Updated subject data")] SubjectUpdateRequest request)
+        [FromBody, SwaggerParameter("Updated subject data")] SubjectUpdateRequestDto request)
     {
         if (request == null)
         {
@@ -105,7 +105,7 @@ public class SubjectsController : ControllerBase
 
         var result = await _subjectService.UpdateSubjectAsync(id, request);
 
-        return Ok(ApiResult<SubjectResponse>.Success(result, "200", "Subject updated successfully."));
+        return Ok(ApiResult<SubjectResponseDto>.Success(result, "200", "Subject updated successfully."));
     }
 
     // =========================================================================

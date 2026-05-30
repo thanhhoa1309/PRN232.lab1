@@ -5,7 +5,7 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface ISubjectService
 {
-    Task<Pagination<SubjectResponse>> GetSubjectsAsync(
+    Task<Pagination<SubjectResponseDto>> GetSubjectsAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -13,8 +13,8 @@ public interface ISubjectService
         int pageSize,
         string? expand);
 
-    Task<SubjectResponse> GetSubjectByIdAsync(int id);
-    Task<SubjectResponse> CreateSubjectAsync(SubjectCreateRequest request);
-    Task<SubjectResponse> UpdateSubjectAsync(int id, SubjectUpdateRequest request);
+    Task<SubjectResponseDto> GetSubjectByIdAsync(int id);
+    Task<SubjectResponseDto> CreateSubjectAsync(SubjectCreateRequestDto request);
+    Task<SubjectResponseDto> UpdateSubjectAsync(int id, SubjectUpdateRequestDto request);
     Task DeleteSubjectAsync(int id);
 }

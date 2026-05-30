@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Prn232.Lab1.Repositories.Domain;
 using Prn232.Lab1.Repositories.Interfaces;
+using Prn232.Lab1.Service.Dtos.Enrollments;
 using Prn232.Lab1.Service.Dtos.Students;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Utils;
@@ -17,7 +18,7 @@ public class StudentService : IStudentService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<StudentResponse>> GetStudentsAsync(
+    public async Task<Pagination<StudentResponseDto>> GetStudentsAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -48,12 +49,32 @@ public class StudentService : IStudentService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(s => StudentListDto.FromEntity(s, expand)).ToList();
 
-        return new Pagination<StudentResponse>(responses, totalCount, page, pageSize);
+        var includeEnrollments = !string.IsNullOrWhiteSpace(expand)
+            && expand.Contains("enrollments", StringComparison.OrdinalIgnoreCase);
+
+        var responses = items.Select(s => new StudentResponseDto
+        {
+            StudentId = s.StudentId,
+            FullName = s.FullName,
+            Email = s.Email,
+            DateOfBirth = s.DateOfBirth,
+            Enrollments = includeEnrollments
+                ? s.Enrollments?.Select(e => new EnrollmentResponseDto
+                {
+                    EnrollmentId = e.EnrollmentId,
+                    StudentId = e.StudentId,
+                    CourseId = e.CourseId,
+                    EnrollDate = e.EnrollDate,
+                    Status = e.Status
+                }).ToList()
+                : null
+        }).ToList();
+
+        return new Pagination<StudentResponseDto>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<StudentResponse> GetStudentByIdAsync(int id)
+    public async Task<StudentResponseDto> GetStudentByIdAsync(int id)
     {
         var entity = await _unitOfWork.StudentRepository.GetByIdAsync(id);
         if (entity == null)
@@ -61,17 +82,41 @@ public class StudentService : IStudentService
             throw ErrorHelper.NotFound("Student not found.");
         }
 
-        return StudentListDto.FromEntity(entity);
+        return new StudentResponseDto
+        {
+            StudentId = entity.StudentId,
+            FullName = entity.FullName,
+            Email = entity.Email,
+            DateOfBirth = entity.DateOfBirth
+        };
     }
 
-    public async Task<StudentResponse> CreateStudentAsync(StudentCreateRequest request)
+    public async Task<StudentResponseDto> CreateStudentAsync(StudentCreateRequestDto request)
     {
-        var entity = StudentCreateDto.ToEntity(request);
+        if (string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.Email))
+        {
+            throw ErrorHelper.BadRequest("FullName and Email are required.");
+        }
+
+        var entity = new Student
+        {
+            FullName = request.FullName.Trim(),
+            Email = request.Email.Trim(),
+            DateOfBirth = request.DateOfBirth
+        };
+
         await _unitOfWork.StudentRepository.CreateAsync(entity);
-        return StudentCreateDto.FromEntity(entity);
+
+        return new StudentResponseDto
+        {
+            StudentId = entity.StudentId,
+            FullName = entity.FullName,
+            Email = entity.Email,
+            DateOfBirth = entity.DateOfBirth
+        };
     }
 
-    public async Task<StudentResponse> UpdateStudentAsync(int id, StudentUpdateRequest request)
+    public async Task<StudentResponseDto> UpdateStudentAsync(int id, StudentUpdateRequestDto request)
     {
         var existing = await _unitOfWork.StudentRepository.GetByIdAsync(id);
         if (existing == null)
@@ -79,9 +124,16 @@ public class StudentService : IStudentService
             throw ErrorHelper.NotFound("Student not found.");
         }
 
-        StudentUpdateDto.Apply(existing, request);
+        UpdateHelper.ApplyUpdates(existing, request);
         await _unitOfWork.StudentRepository.UpdateAsync(existing);
-        return StudentUpdateDto.FromEntity(existing);
+
+        return new StudentResponseDto
+        {
+            StudentId = existing.StudentId,
+            FullName = existing.FullName,
+            Email = existing.Email,
+            DateOfBirth = existing.DateOfBirth
+        };
     }
 
     public async Task DeleteStudentAsync(int id)

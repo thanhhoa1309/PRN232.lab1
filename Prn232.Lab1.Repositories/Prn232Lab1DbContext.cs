@@ -19,6 +19,7 @@ namespace Prn232.Lab1.Repositories
         public DbSet<Subject> Subjects => Set<Subject>();
         public DbSet<Student> Students => Set<Student>();
         public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+        public DbSet<User> Users => Set<User>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,6 +40,15 @@ namespace Prn232.Lab1.Repositories
                 .WithOne(e => e.Student)
                 .HasForeignKey(e => e.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(u => u.UserId);
+                entity.Property(u => u.Username).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
+                entity.Property(u => u.Role).HasMaxLength(20).IsRequired();
+                entity.HasIndex(u => u.Username).IsUnique();
+            });
 
             base.OnModelCreating(modelBuilder);
         }

@@ -17,7 +17,7 @@ public class SubjectService : ISubjectService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<SubjectResponse>> GetSubjectsAsync(
+    public async Task<Pagination<SubjectResponseDto>> GetSubjectsAsync(
         string? search,
         string? sortBy,
         bool isDescending,
@@ -48,12 +48,18 @@ public class SubjectService : ISubjectService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(SubjectListDto.FromEntity).ToList();
+        var responses = items.Select(s => new SubjectResponseDto
+        {
+            SubjectId = s.SubjectId,
+            SubjectCode = s.SubjectCode,
+            SubjectName = s.SubjectName,
+            Credit = s.Credit
+        }).ToList();
 
-        return new Pagination<SubjectResponse>(responses, totalCount, page, pageSize);
+        return new Pagination<SubjectResponseDto>(responses, totalCount, page, pageSize);
     }
 
-    public async Task<SubjectResponse> GetSubjectByIdAsync(int id)
+    public async Task<SubjectResponseDto> GetSubjectByIdAsync(int id)
     {
         var entity = await _unitOfWork.SubjectRepository.GetByIdAsync(id);
         if (entity == null)
@@ -61,17 +67,41 @@ public class SubjectService : ISubjectService
             throw ErrorHelper.NotFound("Subject not found.");
         }
 
-        return SubjectListDto.FromEntity(entity);
+        return new SubjectResponseDto
+        {
+            SubjectId = entity.SubjectId,
+            SubjectCode = entity.SubjectCode,
+            SubjectName = entity.SubjectName,
+            Credit = entity.Credit
+        };
     }
 
-    public async Task<SubjectResponse> CreateSubjectAsync(SubjectCreateRequest request)
+    public async Task<SubjectResponseDto> CreateSubjectAsync(SubjectCreateRequestDto request)
     {
-        var entity = SubjectCreateDto.ToEntity(request);
+        if (string.IsNullOrWhiteSpace(request.SubjectCode) || string.IsNullOrWhiteSpace(request.SubjectName))
+        {
+            throw ErrorHelper.BadRequest("SubjectCode and SubjectName are required.");
+        }
+
+        var entity = new Subject
+        {
+            SubjectCode = request.SubjectCode.Trim(),
+            SubjectName = request.SubjectName.Trim(),
+            Credit = request.Credit
+        };
+
         await _unitOfWork.SubjectRepository.CreateAsync(entity);
-        return SubjectCreateDto.FromEntity(entity);
+
+        return new SubjectResponseDto
+        {
+            SubjectId = entity.SubjectId,
+            SubjectCode = entity.SubjectCode,
+            SubjectName = entity.SubjectName,
+            Credit = entity.Credit
+        };
     }
 
-    public async Task<SubjectResponse> UpdateSubjectAsync(int id, SubjectUpdateRequest request)
+    public async Task<SubjectResponseDto> UpdateSubjectAsync(int id, SubjectUpdateRequestDto request)
     {
         var existing = await _unitOfWork.SubjectRepository.GetByIdAsync(id);
         if (existing == null)
@@ -79,9 +109,16 @@ public class SubjectService : ISubjectService
             throw ErrorHelper.NotFound("Subject not found.");
         }
 
-        SubjectUpdateDto.Apply(existing, request);
+        UpdateHelper.ApplyUpdates(existing, request);
         await _unitOfWork.SubjectRepository.UpdateAsync(existing);
-        return SubjectUpdateDto.FromEntity(existing);
+
+        return new SubjectResponseDto
+        {
+            SubjectId = existing.SubjectId,
+            SubjectCode = existing.SubjectCode,
+            SubjectName = existing.SubjectName,
+            Credit = existing.Credit
+        };
     }
 
     public async Task DeleteSubjectAsync(int id)
