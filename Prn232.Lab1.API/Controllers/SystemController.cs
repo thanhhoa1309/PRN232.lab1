@@ -7,7 +7,7 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/system")]
+[Route("api/v2/system")]
 [ApiController]
 public class SystemController : ControllerBase
 {

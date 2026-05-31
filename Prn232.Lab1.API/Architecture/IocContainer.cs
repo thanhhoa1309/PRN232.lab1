@@ -39,6 +39,7 @@ namespace FUNewsManagementSystem.Architecture
             services.AddScoped<ISubjectService, SubjectService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
             services.AddSingleton<PasswordHasher>();
+            services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             // Add JWT Authentication
             services.SetupJwt(configuration);

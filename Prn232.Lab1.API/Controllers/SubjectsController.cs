@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Subjects;
 using Prn232.Lab1.Service.Interfaces;
@@ -6,8 +7,9 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/subjects")]
+[Route("api/v2/subjects")]
 [ApiController]
+[Authorize]
 public class SubjectsController : ControllerBase
 {
     private readonly ISubjectService _subjectService;

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Students;
 using Prn232.Lab1.Service.Interfaces;
@@ -6,8 +7,9 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/students")]
+[Route("api/v2/students")]
 [ApiController]
+[Authorize]
 public class StudentsController : ControllerBase
 {
     private readonly IStudentService _studentService;

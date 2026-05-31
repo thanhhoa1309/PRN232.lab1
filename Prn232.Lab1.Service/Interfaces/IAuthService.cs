@@ -10,4 +10,6 @@ public interface IAuthService
 
     Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginDto, IConfiguration configuration);
 
+    Task<LoginResponseDto?> RefreshTokenAsync(string refreshToken, IConfiguration configuration);
+
 }

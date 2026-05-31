@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Courses;
 using Prn232.Lab1.Service.Interfaces;
@@ -6,8 +7,9 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/courses")]
+[Route("api/v2/courses")]
 [ApiController]
+[Authorize]
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
@@ -60,6 +62,30 @@ public class CoursesController : ControllerBase
         var result = await _courseService.GetCourseByDetailAsync(id);
 
         return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course retrieved successfully."));
+    }
+
+    // =========================================================================
+    // GET STUDENTS BY COURSE  —  GET /api/v2/courses/{courseId}/students
+    // =========================================================================
+
+    [HttpGet("{courseId:int}/students")]
+    [SwaggerOperation(
+        Summary = "Get students enrolled in a course",
+        Description = "Nested resource: returns all students of a specific course.")]
+    [ProducesResponseType(typeof(ApiResult<object>), 200)]
+    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    public async Task<IActionResult> GetStudentsByCourse(
+        [FromRoute] int courseId,
+        [FromHeader(Name = "X-Request-Id")] string? requestId = null)
+    {
+        var result = await _courseService.GetEnrollmentByCourseAsync(courseId);
+
+        return Ok(ApiResult<object>.Success(new
+        {
+            courseId = result.CourseId,
+            courseName = result.CourseName,
+            students = result.Students ?? new()
+        }, "200", "Students retrieved successfully."));
     }
 
     // =========================================================================

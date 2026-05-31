@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Users;
 using Prn232.Lab1.Service.Interfaces;
@@ -6,8 +7,9 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/users")]
+[Route("api/v2/users")]
 [ApiController]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -76,7 +78,8 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [SwaggerOperation(Summary = "Delete user")]
+    [Authorize(Roles = "Admin")]
+    [SwaggerOperation(Summary = "Delete user (Admin only)")]
     [ProducesResponseType(typeof(ApiResult<bool>), 200)]
     [ProducesResponseType(typeof(ApiResult<object>), 404)]
     public async Task<IActionResult> DeleteUser([FromRoute] int id)
