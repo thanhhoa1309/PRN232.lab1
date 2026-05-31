@@ -34,20 +34,12 @@ public class GlobalExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        // Determine Status Code based on Exception Type
-        var statusCode = exception switch
-        {
-            KeyNotFoundException => StatusCodes.Status404NotFound,
-            ArgumentException => StatusCodes.Status400BadRequest,
-            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-            _ => StatusCodes.Status500InternalServerError
-        };
-
+        var statusCode = ExceptionUtils.ExtractStatusCode(exception);
         context.Response.StatusCode = statusCode;
 
         var response = ApiResult<object>.Failure(
             statusCode.ToString(),
-            exception.Message // Or a generic message if 500
+            exception.Message
         );
 
         return context.Response.WriteAsync(JsonSerializer.Serialize(response));

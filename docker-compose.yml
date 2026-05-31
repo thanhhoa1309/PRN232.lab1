@@ -10,6 +10,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=Prn232.Lab1DB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - JWT__SecretKey=SuperSecretKey-Docker-Environment-2026!
+      - JWT__Issuer=Prn232.Lab1
+      - JWT__Audience=Prn232.Lab1
     ports:
       - "5000:5000"
     networks:
