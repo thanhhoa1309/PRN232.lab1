@@ -12,8 +12,8 @@ using Prn232.Lab1.Repositories;
 namespace Prn232.Lab1.Repositories.Migrations
 {
     [DbContext(typeof(Prn232Lab1DbContext))]
-    [Migration("20260518034954_Prn232.LabDb")]
-    partial class Prn232LabDb
+    [Migration("20260531072737_InitDb")]
+    partial class InitDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -146,6 +146,41 @@ namespace Prn232.Lab1.Repositories.Migrations
                     b.HasKey("SubjectId");
 
                     b.ToTable("Subjects");
+                });
+
+            modelBuilder.Entity("Prn232.Lab1.Repositories.Domain.User", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Prn232.Lab1.Repositories.Domain.Course", b =>

@@ -1,5 +1,4 @@
-﻿using Prn232.Lab1.Repositories;
-using Prn232.Lab1.Repositories.Domain;
+﻿using Prn232.Lab1.Repositories.Domain;
 using Prn232.Lab1.Repositories.Interfaces;
 
 namespace Prn232.Lab1.Repositories

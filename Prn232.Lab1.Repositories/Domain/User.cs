@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Prn232.Lab1.Repositories.Domain
 {
     public class User
@@ -9,5 +11,7 @@ namespace Prn232.Lab1.Repositories.Domain
         public string PasswordHash { get; set; } = string.Empty;
 
         public string Role { get; set; } = string.Empty;
+        [MaxLength(128)] public string? RefreshToken { get; set; }
+
     }
 }

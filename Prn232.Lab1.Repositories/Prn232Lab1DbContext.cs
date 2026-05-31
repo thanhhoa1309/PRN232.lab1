@@ -47,6 +47,7 @@ namespace Prn232.Lab1.Repositories
                 entity.Property(u => u.Username).HasMaxLength(50).IsRequired();
                 entity.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
                 entity.Property(u => u.Role).HasMaxLength(20).IsRequired();
+                entity.Property(u => u.RefreshToken).HasMaxLength(128);
                 entity.HasIndex(u => u.Username).IsUnique();
             });
 
