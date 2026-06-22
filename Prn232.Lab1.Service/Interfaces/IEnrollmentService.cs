@@ -5,12 +5,12 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface IEnrollmentService
 {
-    Task<Pagination<EnrollmentResponseDto>> GetEnrollmentsAsync(
+    Task<PagedResult<EnrollmentResponseDto>> GetEnrollmentsAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand);
 
     Task<EnrollmentResponseDto> GetEnrollmentByIdAsync(int id);

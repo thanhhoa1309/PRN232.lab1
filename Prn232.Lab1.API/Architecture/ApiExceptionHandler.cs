@@ -8,7 +8,7 @@ public class ApiExceptionHandler : IExceptionHandler
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var statusCode = ExceptionUtils.ExtractStatusCode(exception);
-        var body = ExceptionUtils.CreateErrorResponse<object>(exception);
+        var body = ExceptionUtils.CreateErrorResponse(exception);
 
         httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/json";

@@ -6,6 +6,7 @@ namespace Prn232.Lab1.Repositories.Interfaces
     {
         Task<List<T>> GetAllAsync();
         Task<int> CreateAsync(T entity);
+        Task AddRangeAsync(IEnumerable<T> entities);
         Task<int> UpdateAsync(T entity);
         Task<bool> RemoveAsync(T entity);
         Task<T> GetByIdAsync(int id);

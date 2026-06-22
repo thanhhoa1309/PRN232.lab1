@@ -5,12 +5,12 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface ISubjectService
 {
-    Task<Pagination<SubjectResponseDto>> GetSubjectsAsync(
+    Task<PagedResult<SubjectResponseDto>> GetSubjectsAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand);
 
     Task<SubjectResponseDto> GetSubjectByIdAsync(int id);

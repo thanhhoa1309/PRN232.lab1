@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Prn232.Lab1.Repositories;
@@ -7,6 +9,7 @@ using Prn232.Lab1.Repositories.Interfaces;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Service;
 using Prn232.Lab1.Service.Utils;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 
 namespace FUNewsManagementSystem.Architecture
@@ -17,10 +20,8 @@ namespace FUNewsManagementSystem.Architecture
         {
             var configuration = GetConfiguration();
 
-            // Add DbContext
+            services.SetupApiVersioning();
             services.SetupDbContext(configuration);
-
-            // Add Swagger
             services.SetupSwagger();
 
             // Add generic repositories
@@ -38,11 +39,30 @@ namespace FUNewsManagementSystem.Architecture
             services.AddScoped<ISemesterService, SemesterService>();
             services.AddScoped<ISubjectService, SubjectService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
+            services.AddScoped<ISeedDataService, SeedDataService>();
             services.AddSingleton<PasswordHasher>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             // Add JWT Authentication
             services.SetupJwt(configuration);
+
+            return services;
+        }
+
+        private static IServiceCollection SetupApiVersioning(this IServiceCollection services)
+        {
+            services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            })
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
 
             return services;
         }
@@ -76,26 +96,11 @@ namespace FUNewsManagementSystem.Architecture
 
         private static IServiceCollection SetupSwagger(this IServiceCollection services)
         {
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
             services.AddSwaggerGen(c =>
             {
                 c.UseInlineDefinitionsForEnums();
-
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "PRN232 Lab1 LMS API",
-                    Version = "v1",
-                    Description = @"API quản lý học kỳ, môn học, khóa học, sinh viên và đăng ký học.
-                    
-                    **Architecture:**
-                    - 3-Layer Architecture (API → Service → Repository)
-                    - Entity, Business, Request, Response models
-                    - Search, filter, sort, paging, fields, expand",
-                    Contact = new OpenApiContact
-                    {
-                        Name = "PRN232 Team",
-                        Email = "support@prn232.local"
-                    }
-                });
 
                 // JWT Authentication configuration for Swagger
                 var jwtSecurityScheme = new OpenApiSecurityScheme

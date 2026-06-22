@@ -12,5 +12,6 @@ namespace Prn232.Lab1.Repositories.Interfaces
         IGenericRepository<User> UserRepository { get; }
 
         Task<int> SaveChangesAsync();
+        Task ClearLmsDataAsync();
     }
 }

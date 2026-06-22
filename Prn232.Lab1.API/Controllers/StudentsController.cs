@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Students;
@@ -7,122 +8,108 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/v2/students")]
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v1/students")]
 [Authorize]
+[SwaggerTag("Students v1")]
 public class StudentsController : ControllerBase
 {
     private readonly IStudentService _studentService;
+    private readonly ILogger<StudentsController> _logger;
 
-    public StudentsController(IStudentService studentService)
+    public StudentsController(IStudentService studentService, ILogger<StudentsController> logger)
     {
         _studentService = studentService;
+        _logger = logger;
     }
-
-    // =========================================================================
-    // GET ALL  —  GET /api/students
-    // =========================================================================
 
     [HttpGet]
     [SwaggerOperation(
         Summary = "Get all students",
-        Description = "Retrieve a paginated list of students with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<StudentResponseDto>>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+        Description = "Retrieve a paginated list of students with optional search, sort, fields, and expand options.")]
+    [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
     public async Task<IActionResult> GetAllStudents(
-        [FromQuery, SwaggerParameter(Description = "Search by full name or email (optional)")] string? search = null,
-        [FromQuery, SwaggerParameter(Description = "Sort by field: studentId, fullName, email, dateOfBirth (optional)")] string? sortBy = null,
-        [FromQuery, SwaggerParameter(Description = "Sort in descending order? Default: false")] bool isDescending = false,
+        [FromQuery, SwaggerParameter(Description = "Search by full name or email")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort fields, e.g. fullName,-dateOfBirth")] string? sort = null,
         [FromQuery, SwaggerParameter(Description = "Page number, starting from 1")] int page = 1,
-        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int pageSize = 10,
-        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. enrollments (optional)")] string? expand = null)
+        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int? size = null,
+        [FromQuery, SwaggerParameter(Description = "Alias of size")] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Select fields, e.g. studentId,fullName,email")] string? fields = null,
+        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. enrollments")] string? expand = null)
     {
-        if (page < 1 || pageSize < 1)
+        var resolvedPageSize = ListApiHelper.ResolvePageSize(size, pageSize);
+        if (page < 1 || resolvedPageSize < 1)
         {
-            return BadRequest(ApiResult<object>.Failure("400", "Invalid pagination parameters."));
+            return BadRequest(ApiResult.FailureResult("Invalid pagination parameters."));
         }
 
-        var result = await _studentService.GetStudentsAsync(search, sortBy, isDescending, page, pageSize, expand);
+        var result = await _studentService.GetStudentsAsync(
+            search, sort, page, resolvedPageSize, fields, expand);
 
-        return Ok(ApiResult<Pagination<StudentResponseDto>>.Success(result, "200", "Students retrieved successfully."));
+        return Ok(ListApiHelper.ToListResponse(result, "Students retrieved successfully.", fields));
     }
 
-    // =========================================================================
-    // GET BY ID  —  GET /api/students/{id}
-    // =========================================================================
-
-    [HttpGet("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Get student details",
-        Description = "Retrieve detailed information for a specific student by ID.")]
+    [HttpGet("{id:int}", Name = "GetStudentById")]
+    [SwaggerOperation(Summary = "Get student details")]
     [ProducesResponseType(typeof(ApiResult<StudentResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    public async Task<IActionResult> GetStudentById([FromRoute] int id)
+    [ProducesResponseType(typeof(ApiResult), 404)]
+    public async Task<IActionResult> GetStudentById(
+        [FromRoute] int id,
+        [FromHeader(Name = "X-Request-Id")] string? requestId = null)
     {
+        if (!string.IsNullOrWhiteSpace(requestId))
+        {
+            _logger.LogInformation("GetStudentById request {RequestId} for student {StudentId}", requestId, id);
+        }
+
         var result = await _studentService.GetStudentByIdAsync(id);
-
-        return Ok(ApiResult<StudentResponseDto>.Success(result, "200", "Student retrieved successfully."));
+        return Ok(ApiResult<StudentResponseDto>.Ok(result, "Student retrieved successfully."));
     }
-
-    // =========================================================================
-    // CREATE  —  POST /api/students    // =========================================================================
 
     [HttpPost]
-    [SwaggerOperation(
-        Summary = "Create a new student",
-        Description = "Creates a new student with the provided information.")]
+    [SwaggerOperation(Summary = "Create a new student")]
     [ProducesResponseType(typeof(ApiResult<StudentResponseDto>), 201)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
-    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
+    [ProducesResponseType(typeof(ApiResult), 409)]
     public async Task<IActionResult> CreateStudent(
         [FromBody, SwaggerParameter("New student data to be created")] StudentCreateRequestDto request)
     {
         var result = await _studentService.CreateStudentAsync(request);
 
-        return CreatedAtAction(
-            nameof(GetStudentById),
+        return CreatedAtRoute(
+            "GetStudentById",
             new { id = result.StudentId },
-            ApiResult<StudentResponseDto>.Success(result, "201", "Student created successfully."));
+            ApiResult<StudentResponseDto>.Ok(result, "Student created successfully."));
     }
 
-    // =========================================================================
-    // UPDATE  —  PUT /api/students/{id}         // =========================================================================
-
     [HttpPut("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Update student information",
-        Description = "Updates the details of a specific student by ID.")]
+    [SwaggerOperation(Summary = "Update student information")]
     [ProducesResponseType(typeof(ApiResult<StudentResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
+    [ProducesResponseType(typeof(ApiResult), 409)]
     public async Task<IActionResult> UpdateStudent(
         [FromRoute] int id,
         [FromBody, SwaggerParameter("Updated student data")] StudentUpdateRequestDto request)
     {
         if (request == null)
         {
-            return BadRequest(ApiResult<object>.Failure("400", "Student update data is required."));
+            return BadRequest(ApiResult.FailureResult("Student update data is required."));
         }
 
         var result = await _studentService.UpdateStudentAsync(id, request);
-
-        return Ok(ApiResult<StudentResponseDto>.Success(result, "200", "Student updated successfully."));
+        return Ok(ApiResult<StudentResponseDto>.Ok(result, "Student updated successfully."));
     }
 
-    // =========================================================================
-    // DELETE  —  DELETE /api/students/{id}      // =========================================================================
-
     [HttpDelete("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Delete a student",
-        Description = "Deletes a student by ID.")]
+    [SwaggerOperation(Summary = "Delete a student")]
     [ProducesResponseType(typeof(ApiResult<bool>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
     public async Task<IActionResult> DeleteStudent([FromRoute] int id)
     {
         await _studentService.DeleteStudentAsync(id);
-
-        return Ok(ApiResult<bool>.Success(true, "200", "Student deleted successfully."));
+        return Ok(ApiResult<bool>.Ok(true, "Student deleted successfully."));
     }
 }

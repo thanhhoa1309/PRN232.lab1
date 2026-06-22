@@ -5,12 +5,12 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface ISemesterService
 {
-    Task<Pagination<SemesterResponseDto>> GetSemestersAsync(
+    Task<PagedResult<SemesterResponseDto>> GetSemestersAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand);
 
     Task<SemesterResponseDto> GetSemesterByIdAsync(int id);

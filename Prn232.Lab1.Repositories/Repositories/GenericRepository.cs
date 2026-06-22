@@ -30,6 +30,11 @@ namespace Prn232.Lab1.Repositories
             return await _context.SaveChangesAsync();
         }
 
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            await _context.Set<T>().AddRangeAsync(entities);
+        }
+
         public async Task<int> UpdateAsync(T entity)
         {
             _context.ChangeTracker.Clear();

@@ -3,7 +3,6 @@ using System.Text.Json;
 
 namespace Prn232.Lab1.API.Middlewares;
 
-// Catch all unhandled exceptions in the API
 public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
@@ -19,12 +18,10 @@ public class GlobalExceptionMiddleware
     {
         try
         {
-            // Try to run the Controller
             await _next(context);
         }
         catch (Exception ex)
         {
-            // If ANY error happens in Service or Controller -> catch here
             _logger.LogError(ex, "An unhandled exception occurred.");
             await HandleExceptionAsync(context, ex);
         }
@@ -37,12 +34,11 @@ public class GlobalExceptionMiddleware
         var statusCode = ExceptionUtils.ExtractStatusCode(exception);
         context.Response.StatusCode = statusCode;
 
-        var response = ApiResult<object>.Failure(
-            statusCode.ToString(),
-            exception.Message
-        );
+        var response = ExceptionUtils.CreateErrorResponse(exception);
 
-        return context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        return context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
     }
 }
-

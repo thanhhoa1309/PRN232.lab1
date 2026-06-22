@@ -36,6 +36,17 @@ namespace Prn232.Lab1.Repositories
             return await _dbContext.SaveChangesAsync();
         }
 
+        public async Task ClearLmsDataAsync()
+        {
+            _dbContext.Enrollments.RemoveRange(_dbContext.Enrollments);
+            _dbContext.Courses.RemoveRange(_dbContext.Courses);
+            _dbContext.Students.RemoveRange(_dbContext.Students);
+            _dbContext.Subjects.RemoveRange(_dbContext.Subjects);
+            _dbContext.Semesters.RemoveRange(_dbContext.Semesters);
+
+            await _dbContext.SaveChangesAsync();
+        }
+
         public void Dispose()
         {
             _dbContext?.Dispose();

@@ -19,10 +19,9 @@ public class UserService : IUserService
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Pagination<UserResponseDto>> GetUsersAsync(
+    public async Task<PagedResult<UserResponseDto>> GetUsersAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize)
     {
@@ -45,13 +44,13 @@ public class UserService : IUserService
             ["role"] = u => u.Role
         };
 
-        dbQuery = QueryHelper.ApplySorting(dbQuery, sortBy, isDescending, sortMap);
+        dbQuery = QueryHelper.ApplySorting(dbQuery, sort, sortMap);
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
         var responses = items.Select(MapToResponse).ToList();
-        return new Pagination<UserResponseDto>(responses, totalCount, page, pageSize);
+        return PagedResult<UserResponseDto>.Create(responses, totalCount, page, pageSize);
     }
 
     public async Task<UserResponseDto> GetUserByIdAsync(int id)

@@ -10,8 +10,12 @@ public class StudentCreateRequestDto
     public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Email is required.")]
+    [EmailAddress(ErrorMessage = "Invalid email format.")]
     [FptuStudentEmail]
     public string Email { get; set; } = string.Empty;
+
+    [Phone(ErrorMessage = "Invalid phone number format.")]
+    public string? Phone { get; set; }
 
     [Required(ErrorMessage = "DateOfBirth is required.")]
     public DateTime DateOfBirth { get; set; }

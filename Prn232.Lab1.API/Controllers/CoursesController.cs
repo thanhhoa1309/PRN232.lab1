@@ -7,9 +7,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/v2/courses")]
 [ApiController]
+[Route("api/courses")]
 [Authorize]
+[SwaggerTag("Courses")]
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
@@ -19,102 +20,96 @@ public class CoursesController : ControllerBase
         _courseService = courseService;
     }
 
-    // =========================================================================
-    // GET ALL  —  GET /api/courses
-    // =========================================================================
-
     [HttpGet]
     [SwaggerOperation(
         Summary = "Get all courses",
-        Description = "Retrieve a paginated list of courses with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<CourseResponseDto>>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+        Description = "Retrieve a paginated list of courses with optional search, sort, fields, and expand options.")]
+    [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
     public async Task<IActionResult> GetAllCourses(
-        [FromQuery, SwaggerParameter(Description = "Search by course name (optional)")] string? search = null,
-        [FromQuery, SwaggerParameter(Description = "Sort by field: courseId, courseName, semesterId (optional)")] string? sortBy = null,
-        [FromQuery, SwaggerParameter(Description = "Sort in descending order? Default: false")] bool isDescending = false,
+        [FromQuery, SwaggerParameter(Description = "Search by course name")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort fields, e.g. courseName,-semesterId")] string? sort = null,
         [FromQuery, SwaggerParameter(Description = "Page number, starting from 1")] int page = 1,
-        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int pageSize = 10,
-        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. semester (optional)")] string? expand = null)
+        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int? size = null,
+        [FromQuery, SwaggerParameter(Description = "Alias of size")] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Select fields, e.g. courseId,courseName")] string? fields = null,
+        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. semester")] string? expand = null)
     {
-        if (page < 1 || pageSize < 1)
+        var resolvedPageSize = ListApiHelper.ResolvePageSize(size, pageSize);
+        if (page < 1 || resolvedPageSize < 1)
         {
-            return BadRequest(ApiResult<object>.Failure("400", "Invalid pagination parameters."));
+            return BadRequest(ApiResult.FailureResult("Invalid pagination parameters."));
         }
 
-        var result = await _courseService.GetCoursesAsync(search, sortBy, isDescending, page, pageSize, expand);
-
-        return Ok(ApiResult<Pagination<CourseResponseDto>>.Success(result, "200", "Courses retrieved successfully."));
+        var result = await _courseService.GetCoursesAsync(search, sort, page, resolvedPageSize, fields, expand);
+        return Ok(ListApiHelper.ToListResponse(result, "Courses retrieved successfully.", fields));
     }
 
-    // =========================================================================
-    // GET BY ID  —  GET /api/courses/{id}
-    // =========================================================================
+    [HttpGet("{id:int}/enrollments")]
+    [SwaggerOperation(Summary = "Get enrollments of a course")]
+    [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
+    public async Task<IActionResult> GetEnrollmentsByCourse(
+        [FromRoute] int id,
+        [FromQuery] int page = 1,
+        [FromQuery] int? size = null,
+        [FromQuery] int limit = 10,
+        [FromQuery, SwaggerParameter(Description = "Filter by status, e.g. Active")] string? status = null,
+        [FromQuery, SwaggerParameter(Description = "Sort fields, e.g. -enrollDate,status")] string? sort = null,
+        [FromQuery, SwaggerParameter(Description = "Select fields")] string? fields = null)
+    {
+        var resolvedPageSize = ListApiHelper.ResolvePageSize(size, limit);
+        if (page < 1 || resolvedPageSize < 1)
+        {
+            return BadRequest(ApiResult.FailureResult("Invalid pagination parameters."));
+        }
+
+        var result = await _courseService.GetEnrollmentsByCourseAsync(
+            id, status, sort, page, resolvedPageSize, fields);
+
+        return Ok(ListApiHelper.ToListResponse(result, $"Enrollments of course {id} retrieved successfully.", fields));
+    }
+
+    [HttpGet("{id:int}/students")]
+    [SwaggerOperation(Summary = "Get students enrolled in a course")]
+    [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
+    public async Task<IActionResult> GetStudentsByCourse(
+        [FromRoute] int id,
+        [FromQuery, SwaggerParameter(Description = "Search by full name or email")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort fields, e.g. fullName,-dateOfBirth")] string? sort = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int? size = null,
+        [FromQuery] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Select fields")] string? fields = null)
+    {
+        var resolvedPageSize = ListApiHelper.ResolvePageSize(size, pageSize);
+        if (page < 1 || resolvedPageSize < 1)
+        {
+            return BadRequest(ApiResult.FailureResult("Invalid pagination parameters."));
+        }
+
+        var result = await _courseService.GetEnrolledStudentsByCourseAsync(
+            id, search, sort, page, resolvedPageSize, fields);
+
+        return Ok(ListApiHelper.ToListResponse(result, $"Students enrolled in course {id} retrieved successfully.", fields));
+    }
 
     [HttpGet("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Get course details",
-        Description = "Retrieve detailed information for a specific course by ID, including semester.")]
+    [SwaggerOperation(Summary = "Get course details")]
     [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
     public async Task<IActionResult> GetCourseByDetail([FromRoute] int id)
     {
         var result = await _courseService.GetCourseByDetailAsync(id);
-
-        return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course retrieved successfully."));
+        return Ok(ApiResult<CourseResponseDto>.Ok(result, "Course retrieved successfully."));
     }
-
-    // =========================================================================
-    // GET STUDENTS BY COURSE  —  GET /api/v2/courses/{courseId}/students
-    // =========================================================================
-
-    [HttpGet("{courseId:int}/students")]
-    [SwaggerOperation(
-        Summary = "Get students enrolled in a course",
-        Description = "Nested resource: returns all students of a specific course.")]
-    [ProducesResponseType(typeof(ApiResult<object>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    public async Task<IActionResult> GetStudentsByCourse(
-        [FromRoute] int courseId,
-        [FromHeader(Name = "X-Request-Id")] string? requestId = null)
-    {
-        var result = await _courseService.GetEnrollmentByCourseAsync(courseId);
-
-        return Ok(ApiResult<object>.Success(new
-        {
-            courseId = result.CourseId,
-            courseName = result.CourseName,
-            students = result.Students ?? new()
-        }, "200", "Students retrieved successfully."));
-    }
-
-    // =========================================================================
-    // GET ENROLLMENT BY COURSE  —  GET /api/courses/enrollment/{id}
-    // =========================================================================
-
-    [HttpGet("enrollment/{id:int}")]
-    [SwaggerOperation(
-        Summary = "Get course details",
-        Description = "Retrieve course by ID, including enrolled students and enrollments.")]
-    [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    public async Task<IActionResult> GetEnrollmentByCourse([FromRoute] int id)
-    {
-        var result = await _courseService.GetEnrollmentByCourseAsync(id);
-
-        return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course retrieved successfully."));
-    }
-
-    // =========================================================================
-    // CREATE  —  POST /api/courses    // =========================================================================
 
     [HttpPost]
-    [SwaggerOperation(
-        Summary = "Create a new course",
-        Description = "Creates a new course with the provided information.")]
+    [SwaggerOperation(Summary = "Create a new course")]
     [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 201)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
-    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
+    [ProducesResponseType(typeof(ApiResult), 409)]
     public async Task<IActionResult> CreateCourse(
         [FromBody, SwaggerParameter("New course data to be created")] CourseCreateRequestDto request)
     {
@@ -123,47 +118,35 @@ public class CoursesController : ControllerBase
         return CreatedAtAction(
             nameof(GetCourseByDetail),
             new { id = result.CourseId },
-            ApiResult<CourseResponseDto>.Success(result, "201", "Course created successfully."));
+            ApiResult<CourseResponseDto>.Ok(result, "Course created successfully."));
     }
 
-    // =========================================================================
-    // UPDATE  —  PUT /api/courses/{id}         // =========================================================================
-
     [HttpPut("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Update course information",
-        Description = "Updates the details of a specific course by ID.")]
+    [SwaggerOperation(Summary = "Update course information")]
     [ProducesResponseType(typeof(ApiResult<CourseResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
+    [ProducesResponseType(typeof(ApiResult), 409)]
     public async Task<IActionResult> UpdateCourse(
         [FromRoute] int id,
         [FromBody, SwaggerParameter("Updated course data")] CourseUpdateRequestDto request)
     {
         if (request == null)
         {
-            return BadRequest(ApiResult<object>.Failure("400", "Course update data is required."));
+            return BadRequest(ApiResult.FailureResult("Course update data is required."));
         }
 
         var result = await _courseService.UpdateCourseAsync(id, request);
-
-        return Ok(ApiResult<CourseResponseDto>.Success(result, "200", "Course updated successfully."));
+        return Ok(ApiResult<CourseResponseDto>.Ok(result, "Course updated successfully."));
     }
 
-    // =========================================================================
-    // DELETE  —  DELETE /api/courses/{id}      // =========================================================================
-
     [HttpDelete("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Delete a course",
-        Description = "Deletes a course by ID.")]
+    [SwaggerOperation(Summary = "Delete a course")]
     [ProducesResponseType(typeof(ApiResult<bool>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
     public async Task<IActionResult> DeleteCourse([FromRoute] int id)
     {
         await _courseService.DeleteCourseAsync(id);
-
-        return Ok(ApiResult<bool>.Success(true, "200", "Course deleted successfully."));
+        return Ok(ApiResult<bool>.Ok(true, "Course deleted successfully."));
     }
 }

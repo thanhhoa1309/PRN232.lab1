@@ -7,9 +7,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Prn232.Lab1.API.Controllers;
 
-[Route("api/v2/semesters")]
 [ApiController]
+[Route("api/semesters")]
 [Authorize]
+[SwaggerTag("Semesters")]
 public class SemestersController : ControllerBase
 {
     private readonly ISemesterService _semesterService;
@@ -19,61 +20,46 @@ public class SemestersController : ControllerBase
         _semesterService = semesterService;
     }
 
-    // =========================================================================
-    // GET ALL  —  GET /api/semesters
-    // =========================================================================
-
     [HttpGet]
     [SwaggerOperation(
         Summary = "Get all semesters",
-        Description = "Retrieve a paginated list of semesters with optional search, sort, and expand options.")]
-    [ProducesResponseType(typeof(ApiResult<Pagination<SemesterResponseDto>>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
+        Description = "Retrieve a paginated list of semesters with optional search, sort, fields, and expand options.")]
+    [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
     public async Task<IActionResult> GetAllSemesters(
-        [FromQuery, SwaggerParameter(Description = "Search by semester name (optional)")] string? search = null,
-        [FromQuery, SwaggerParameter(Description = "Sort by field: semesterId, semesterName, startDate, endDate (optional)")] string? sortBy = null,
-        [FromQuery, SwaggerParameter(Description = "Sort in descending order? Default: false")] bool isDescending = false,
+        [FromQuery, SwaggerParameter(Description = "Search by semester name")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort fields, e.g. semesterName,-startDate")] string? sort = null,
         [FromQuery, SwaggerParameter(Description = "Page number, starting from 1")] int page = 1,
-        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int pageSize = 10,
-        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. courses (optional)")] string? expand = null)
+        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int? size = null,
+        [FromQuery, SwaggerParameter(Description = "Alias of size")] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Select fields, e.g. semesterId,semesterName")] string? fields = null,
+        [FromQuery, SwaggerParameter(Description = "Expand related data, e.g. courses")] string? expand = null)
     {
-        if (page < 1 || pageSize < 1)
+        var resolvedPageSize = ListApiHelper.ResolvePageSize(size, pageSize);
+        if (page < 1 || resolvedPageSize < 1)
         {
-            return BadRequest(ApiResult<object>.Failure("400", "Invalid pagination parameters."));
+            return BadRequest(ApiResult.FailureResult("Invalid pagination parameters."));
         }
 
-        var result = await _semesterService.GetSemestersAsync(search, sortBy, isDescending, page, pageSize, expand);
-
-        return Ok(ApiResult<Pagination<SemesterResponseDto>>.Success(result, "200", "Semesters retrieved successfully."));
+        var result = await _semesterService.GetSemestersAsync(search, sort, page, resolvedPageSize, fields, expand);
+        return Ok(ListApiHelper.ToListResponse(result, "Semesters retrieved successfully.", fields));
     }
 
-    // =========================================================================
-    // GET BY ID  —  GET /api/semesters/{id}
-    // =========================================================================
-
     [HttpGet("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Get semester details",
-        Description = "Retrieve detailed information for a specific semester by ID.")]
+    [SwaggerOperation(Summary = "Get semester details")]
     [ProducesResponseType(typeof(ApiResult<SemesterResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
     public async Task<IActionResult> GetSemesterById([FromRoute] int id)
     {
         var result = await _semesterService.GetSemesterByIdAsync(id);
-
-        return Ok(ApiResult<SemesterResponseDto>.Success(result, "200", "Semester retrieved successfully."));
+        return Ok(ApiResult<SemesterResponseDto>.Ok(result, "Semester retrieved successfully."));
     }
 
-    // =========================================================================
-    // CREATE  —  POST /api/semesters    // =========================================================================
-
     [HttpPost]
-    [SwaggerOperation(
-        Summary = "Create a new semester",
-        Description = "Creates a new semester with the provided information.")]
+    [SwaggerOperation(Summary = "Create a new semester")]
     [ProducesResponseType(typeof(ApiResult<SemesterResponseDto>), 201)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
-    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
+    [ProducesResponseType(typeof(ApiResult), 409)]
     public async Task<IActionResult> CreateSemester(
         [FromBody, SwaggerParameter("New semester data to be created")] SemesterCreateRequestDto request)
     {
@@ -82,47 +68,36 @@ public class SemestersController : ControllerBase
         return CreatedAtAction(
             nameof(GetSemesterById),
             new { id = result.SemesterId },
-            ApiResult<SemesterResponseDto>.Success(result, "201", "Semester created successfully."));
+            ApiResult<SemesterResponseDto>.Ok(result, "Semester created successfully."));
     }
 
-    // =========================================================================
-    // UPDATE  —  PUT /api/semesters/{id}         // =========================================================================
-
     [HttpPut("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Update semester information",
-        Description = "Updates the details of a specific semester by ID.")]
+    [SwaggerOperation(Summary = "Update semester information")]
     [ProducesResponseType(typeof(ApiResult<SemesterResponseDto>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 400)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
-    [ProducesResponseType(typeof(ApiResult<object>), 409)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
+    [ProducesResponseType(typeof(ApiResult), 409)]
     public async Task<IActionResult> UpdateSemester(
         [FromRoute] int id,
         [FromBody, SwaggerParameter("Updated semester data")] SemesterUpdateRequestDto request)
     {
         if (request == null)
         {
-            return BadRequest(ApiResult<object>.Failure("400", "Semester update data is required."));
+            return BadRequest(ApiResult.FailureResult("Semester update data is required."));
         }
 
         var result = await _semesterService.UpdateSemesterAsync(id, request);
-
-        return Ok(ApiResult<SemesterResponseDto>.Success(result, "200", "Semester updated successfully."));
+        return Ok(ApiResult<SemesterResponseDto>.Ok(result, "Semester updated successfully."));
     }
 
-    // =========================================================================
-    // DELETE  —  DELETE /api/semesters/{id}      // =========================================================================
-
     [HttpDelete("{id:int}")]
-    [SwaggerOperation(
-        Summary = "Delete a semester",
-        Description = "Deletes a semester by ID.")]
+    [Authorize(Roles = "Admin")]
+    [SwaggerOperation(Summary = "Delete a semester (Admin only)")]
     [ProducesResponseType(typeof(ApiResult<bool>), 200)]
-    [ProducesResponseType(typeof(ApiResult<object>), 404)]
+    [ProducesResponseType(typeof(ApiResult), 404)]
     public async Task<IActionResult> DeleteSemester([FromRoute] int id)
     {
         await _semesterService.DeleteSemesterAsync(id);
-
-        return Ok(ApiResult<bool>.Success(true, "200", "Semester deleted successfully."));
+        return Ok(ApiResult<bool>.Ok(true, "Semester deleted successfully."));
     }
 }

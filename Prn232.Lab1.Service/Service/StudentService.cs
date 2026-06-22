@@ -18,18 +18,25 @@ public class StudentService : IStudentService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<StudentResponseDto>> GetStudentsAsync(
+    public async Task<PagedResult<StudentResponseDto>> GetStudentsAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
 
+        var includeEnrollments = ExpandHelper.HasExpand(expand, "enrollments");
+
         IQueryable<Student> dbQuery = _unitOfWork.StudentRepository.GetAllAsQueryable();
+
+        if (includeEnrollments)
+        {
+            dbQuery = dbQuery.Include(s => s.Enrollments);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -45,50 +52,30 @@ public class StudentService : IStudentService
             ["dateOfBirth"] = s => s.DateOfBirth
         };
 
-        dbQuery = QueryHelper.ApplySorting(dbQuery, sortBy, isDescending, sortMap);
+        dbQuery = QueryHelper.ApplySorting(dbQuery, sort, sortMap);
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        var includeEnrollments = !string.IsNullOrWhiteSpace(expand)
-            && expand.Contains("enrollments", StringComparison.OrdinalIgnoreCase);
+        var responses = items
+            .Select(s => MapToResponse(s, includeEnrollments))
+            .ToList();
 
-        var responses = items.Select(s => new StudentResponseDto
-        {
-            StudentId = s.StudentId,
-            FullName = s.FullName,
-            Email = s.Email,
-            DateOfBirth = s.DateOfBirth,
-            Enrollments = includeEnrollments
-                ? s.Enrollments?.Select(e => new EnrollmentResponseDto
-                {
-                    EnrollmentId = e.EnrollmentId,
-                    StudentId = e.StudentId,
-                    CourseId = e.CourseId,
-                    EnrollDate = e.EnrollDate,
-                    Status = e.Status
-                }).ToList()
-                : null
-        }).ToList();
-
-        return new Pagination<StudentResponseDto>(responses, totalCount, page, pageSize);
+        return PagedResult<StudentResponseDto>.Create(responses, totalCount, page, pageSize);
     }
 
     public async Task<StudentResponseDto> GetStudentByIdAsync(int id)
     {
-        var entity = await _unitOfWork.StudentRepository.GetByIdAsync(id);
+        var entity = await _unitOfWork.StudentRepository.GetAllAsQueryable()
+            .Include(s => s.Enrollments)
+            .FirstOrDefaultAsync(s => s.StudentId == id);
+
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Student not found.");
         }
 
-        return new StudentResponseDto
-        {
-            StudentId = entity.StudentId,
-            FullName = entity.FullName,
-            Email = entity.Email,
-            DateOfBirth = entity.DateOfBirth
-        };
+        return MapToResponse(entity, includeEnrollments: true);
     }
 
     public async Task<StudentResponseDto> CreateStudentAsync(StudentCreateRequestDto request)
@@ -98,22 +85,22 @@ public class StudentService : IStudentService
             throw ErrorHelper.BadRequest("FullName and Email are required.");
         }
 
+        var email = request.Email.Trim();
+        if (await EmailExistsAsync(email))
+        {
+            throw ErrorHelper.BadRequest("Email already exists.");
+        }
+
         var entity = new Student
         {
             FullName = request.FullName.Trim(),
-            Email = request.Email.Trim(),
+            Email = email,
             DateOfBirth = request.DateOfBirth
         };
 
         await _unitOfWork.StudentRepository.CreateAsync(entity);
 
-        return new StudentResponseDto
-        {
-            StudentId = entity.StudentId,
-            FullName = entity.FullName,
-            Email = entity.Email,
-            DateOfBirth = entity.DateOfBirth
-        };
+        return MapToResponse(entity, includeEnrollments: false);
     }
 
     public async Task<StudentResponseDto> UpdateStudentAsync(int id, StudentUpdateRequestDto request)
@@ -124,26 +111,71 @@ public class StudentService : IStudentService
             throw ErrorHelper.NotFound("Student not found.");
         }
 
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var email = request.Email.Trim();
+            if (await EmailExistsAsync(email, id))
+            {
+                throw ErrorHelper.BadRequest("Email already exists.");
+            }
+        }
+
         UpdateHelper.ApplyUpdates(existing, request);
         await _unitOfWork.StudentRepository.UpdateAsync(existing);
 
-        return new StudentResponseDto
-        {
-            StudentId = existing.StudentId,
-            FullName = existing.FullName,
-            Email = existing.Email,
-            DateOfBirth = existing.DateOfBirth
-        };
+        return MapToResponse(existing, includeEnrollments: false);
     }
 
     public async Task DeleteStudentAsync(int id)
     {
-        var existing = await _unitOfWork.StudentRepository.GetByIdAsync(id);
+        var existing = await _unitOfWork.StudentRepository.GetAllAsQueryable()
+            .Include(s => s.Enrollments)
+            .FirstOrDefaultAsync(s => s.StudentId == id);
+
         if (existing == null)
         {
             throw ErrorHelper.NotFound("Student not found.");
         }
 
+        if (existing.Enrollments.Any())
+        {
+            throw ErrorHelper.BadRequest("Cannot delete student that has enrollments.");
+        }
+
         await _unitOfWork.StudentRepository.RemoveAsync(existing);
+    }
+
+    private async Task<bool> EmailExistsAsync(string email, int? excludeId = null)
+    {
+        var query = _unitOfWork.StudentRepository.GetAllAsQueryable()
+            .Where(s => s.Email == email);
+
+        if (excludeId.HasValue)
+        {
+            query = query.Where(s => s.StudentId != excludeId.Value);
+        }
+
+        return await query.AnyAsync();
+    }
+
+    private static StudentResponseDto MapToResponse(Student entity, bool includeEnrollments)
+    {
+        return new StudentResponseDto
+        {
+            StudentId = entity.StudentId,
+            FullName = entity.FullName,
+            Email = entity.Email,
+            DateOfBirth = entity.DateOfBirth,
+            Enrollments = includeEnrollments
+                ? entity.Enrollments?.Select(e => new EnrollmentResponseDto
+                {
+                    EnrollmentId = e.EnrollmentId,
+                    StudentId = e.StudentId,
+                    CourseId = e.CourseId,
+                    EnrollDate = e.EnrollDate,
+                    Status = e.Status
+                }).ToList()
+                : null
+        };
     }
 }

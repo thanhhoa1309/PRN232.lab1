@@ -41,6 +41,12 @@ namespace Prn232.Lab1.Repositories
                 .HasForeignKey(e => e.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Student>(entity =>
+            {
+                entity.Property(s => s.Email).HasMaxLength(100).IsRequired();
+                entity.HasIndex(s => s.Email).IsUnique();
+            });
+
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(u => u.UserId);

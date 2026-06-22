@@ -76,7 +76,7 @@ public class AuthService : IAuthService
 
         var accessToken = JwtUtils.GenerateJwtToken(
             user.UserId, user.Username, user.Role,
-            configuration, TimeSpan.FromMinutes(30));
+            configuration, AuthTokenConstants.AccessTokenValidity);
 
         var refreshToken = GenerateRefreshToken();
         user.RefreshToken = refreshToken;
@@ -87,7 +87,8 @@ public class AuthService : IAuthService
         return new LoginResponseDto
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken,
+            ExpiresIn = AuthTokenConstants.AccessTokenExpiresInSeconds
         };
     }
 
@@ -101,7 +102,7 @@ public class AuthService : IAuthService
 
         var newAccessToken = JwtUtils.GenerateJwtToken(
             user.UserId, user.Username, user.Role,
-            configuration, TimeSpan.FromMinutes(30));
+            configuration, AuthTokenConstants.AccessTokenValidity);
 
         var newRefreshToken = GenerateRefreshToken();
         user.RefreshToken = newRefreshToken;
@@ -110,7 +111,8 @@ public class AuthService : IAuthService
         return new LoginResponseDto
         {
             AccessToken = newAccessToken,
-            RefreshToken = newRefreshToken
+            RefreshToken = newRefreshToken,
+            ExpiresIn = AuthTokenConstants.AccessTokenExpiresInSeconds
         };
     }
 

@@ -14,8 +14,11 @@ public class FptuStudentEmailAttribute : ValidationAttribute
 
     protected override ValidationResult? IsValid(object? value, ValidationContext ctx)
     {
-        if (value is not string email || string.IsNullOrWhiteSpace(email))
-            return new ValidationResult("Email is required.");
+        if (value is null || (value is string s && string.IsNullOrWhiteSpace(s)))
+            return ValidationResult.Success;
+
+        if (value is not string email)
+            return new ValidationResult("Email must be a string.");
 
         return Pattern.IsMatch(email)
             ? ValidationResult.Success

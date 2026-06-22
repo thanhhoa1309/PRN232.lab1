@@ -20,18 +20,31 @@ public class EnrollmentService : IEnrollmentService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<EnrollmentResponseDto>> GetEnrollmentsAsync(
+    public async Task<PagedResult<EnrollmentResponseDto>> GetEnrollmentsAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
 
+        var includeStudent = ExpandHelper.HasExpand(expand, "student");
+        var includeCourse = ExpandHelper.HasExpand(expand, "course");
+
         IQueryable<Enrollment> dbQuery = _unitOfWork.EnrollmentRepository.GetAllAsQueryable();
+
+        if (includeStudent)
+        {
+            dbQuery = dbQuery.Include(e => e.Student);
+        }
+
+        if (includeCourse)
+        {
+            dbQuery = dbQuery.Include(e => e.Course).ThenInclude(c => c!.Semester);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -48,70 +61,32 @@ public class EnrollmentService : IEnrollmentService
             ["status"] = e => e.Status
         };
 
-        dbQuery = QueryHelper.ApplySorting(dbQuery, sortBy, isDescending, sortMap);
+        dbQuery = QueryHelper.ApplySorting(dbQuery, sort, sortMap);
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        var includeStudent = !string.IsNullOrWhiteSpace(expand)
-            && expand.Contains("student", StringComparison.OrdinalIgnoreCase);
-        var includeCourse = !string.IsNullOrWhiteSpace(expand)
-            && expand.Contains("course", StringComparison.OrdinalIgnoreCase);
+        var responses = items
+            .Select(e => MapToResponse(e, includeStudent, includeCourse))
+            .ToList();
 
-        var responses = items.Select(e => new EnrollmentResponseDto
-        {
-            EnrollmentId = e.EnrollmentId,
-            StudentId = e.StudentId,
-            CourseId = e.CourseId,
-            EnrollDate = e.EnrollDate,
-            Status = e.Status,
-            Student = includeStudent && e.Student != null
-                ? new StudentResponseDto
-                {
-                    StudentId = e.Student.StudentId,
-                    FullName = e.Student.FullName,
-                    Email = e.Student.Email,
-                    DateOfBirth = e.Student.DateOfBirth
-                }
-                : null,
-            Course = includeCourse && e.Course != null
-                ? new CourseResponseDto
-                {
-                    CourseId = e.Course.CourseId,
-                    CourseName = e.Course.CourseName,
-                    SemesterId = e.Course.SemesterId,
-                    Semester = e.Course.Semester != null
-                        ? new SemesterResponseDto
-                        {
-                            SemesterId = e.Course.Semester.SemesterId,
-                            SemesterName = e.Course.Semester.SemesterName,
-                            StartDate = e.Course.Semester.StartDate,
-                            EndDate = e.Course.Semester.EndDate
-                        }
-                        : null
-                }
-                : null
-        }).ToList();
-
-        return new Pagination<EnrollmentResponseDto>(responses, totalCount, page, pageSize);
+        return PagedResult<EnrollmentResponseDto>.Create(responses, totalCount, page, pageSize);
     }
 
     public async Task<EnrollmentResponseDto> GetEnrollmentByIdAsync(int id)
     {
-        var entity = await _unitOfWork.EnrollmentRepository.GetByIdAsync(id);
+        var entity = await _unitOfWork.EnrollmentRepository.GetAllAsQueryable()
+            .Include(e => e.Student)
+            .Include(e => e.Course)
+                .ThenInclude(c => c!.Semester)
+            .FirstOrDefaultAsync(e => e.EnrollmentId == id);
+
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Enrollment not found.");
         }
 
-        return new EnrollmentResponseDto
-        {
-            EnrollmentId = entity.EnrollmentId,
-            StudentId = entity.StudentId,
-            CourseId = entity.CourseId,
-            EnrollDate = entity.EnrollDate,
-            Status = entity.Status
-        };
+        return MapToResponse(entity, includeStudent: true, includeCourse: true);
     }
 
     public async Task<EnrollmentResponseDto> CreateEnrollmentAsync(EnrollmentCreateRequestDto request)
@@ -143,14 +118,7 @@ public class EnrollmentService : IEnrollmentService
 
         await _unitOfWork.EnrollmentRepository.CreateAsync(entity);
 
-        return new EnrollmentResponseDto
-        {
-            EnrollmentId = entity.EnrollmentId,
-            StudentId = entity.StudentId,
-            CourseId = entity.CourseId,
-            EnrollDate = entity.EnrollDate,
-            Status = entity.Status
-        };
+        return MapToResponse(entity, includeStudent: false, includeCourse: false);
     }
 
     public async Task<EnrollmentResponseDto> UpdateEnrollmentAsync(int id, EnrollmentUpdateRequestDto request)
@@ -182,14 +150,7 @@ public class EnrollmentService : IEnrollmentService
         UpdateHelper.ApplyUpdates(existing, request);
         await _unitOfWork.EnrollmentRepository.UpdateAsync(existing);
 
-        return new EnrollmentResponseDto
-        {
-            EnrollmentId = existing.EnrollmentId,
-            StudentId = existing.StudentId,
-            CourseId = existing.CourseId,
-            EnrollDate = existing.EnrollDate,
-            Status = existing.Status
-        };
+        return MapToResponse(existing, includeStudent: false, includeCourse: false);
     }
 
     public async Task DeleteEnrollmentAsync(int id)
@@ -201,5 +162,43 @@ public class EnrollmentService : IEnrollmentService
         }
 
         await _unitOfWork.EnrollmentRepository.RemoveAsync(existing);
+    }
+
+    private static EnrollmentResponseDto MapToResponse(Enrollment entity, bool includeStudent, bool includeCourse)
+    {
+        return new EnrollmentResponseDto
+        {
+            EnrollmentId = entity.EnrollmentId,
+            StudentId = entity.StudentId,
+            CourseId = entity.CourseId,
+            EnrollDate = entity.EnrollDate,
+            Status = entity.Status,
+            Student = includeStudent && entity.Student != null
+                ? new StudentResponseDto
+                {
+                    StudentId = entity.Student.StudentId,
+                    FullName = entity.Student.FullName,
+                    Email = entity.Student.Email,
+                    DateOfBirth = entity.Student.DateOfBirth
+                }
+                : null,
+            Course = includeCourse && entity.Course != null
+                ? new CourseResponseDto
+                {
+                    CourseId = entity.Course.CourseId,
+                    CourseName = entity.Course.CourseName,
+                    SemesterId = entity.Course.SemesterId,
+                    Semester = entity.Course.Semester != null
+                        ? new SemesterResponseDto
+                        {
+                            SemesterId = entity.Course.Semester.SemesterId,
+                            SemesterName = entity.Course.Semester.SemesterName,
+                            StartDate = entity.Course.Semester.StartDate,
+                            EndDate = entity.Course.Semester.EndDate
+                        }
+                        : null
+                }
+                : null
+        };
     }
 }

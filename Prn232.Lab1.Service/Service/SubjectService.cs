@@ -17,12 +17,12 @@ public class SubjectService : ISubjectService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<SubjectResponseDto>> GetSubjectsAsync(
+    public async Task<PagedResult<SubjectResponseDto>> GetSubjectsAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand)
     {
         page = page < 1 ? 1 : page;
@@ -44,19 +44,14 @@ public class SubjectService : ISubjectService
             ["credit"] = s => s.Credit
         };
 
-        dbQuery = QueryHelper.ApplySorting(dbQuery, sortBy, isDescending, sortMap);
+        dbQuery = QueryHelper.ApplySorting(dbQuery, sort, sortMap);
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        var responses = items.Select(s => new SubjectResponseDto
-        {
-            SubjectId = s.SubjectId,
-            SubjectCode = s.SubjectCode,
-            SubjectName = s.SubjectName,
-            Credit = s.Credit
-        }).ToList();
 
-        return new Pagination<SubjectResponseDto>(responses, totalCount, page, pageSize);
+        var responses = items.Select(MapToResponse).ToList();
+
+        return PagedResult<SubjectResponseDto>.Create(responses, totalCount, page, pageSize);
     }
 
     public async Task<SubjectResponseDto> GetSubjectByIdAsync(int id)
@@ -67,13 +62,7 @@ public class SubjectService : ISubjectService
             throw ErrorHelper.NotFound("Subject not found.");
         }
 
-        return new SubjectResponseDto
-        {
-            SubjectId = entity.SubjectId,
-            SubjectCode = entity.SubjectCode,
-            SubjectName = entity.SubjectName,
-            Credit = entity.Credit
-        };
+        return MapToResponse(entity);
     }
 
     public async Task<SubjectResponseDto> CreateSubjectAsync(SubjectCreateRequestDto request)
@@ -92,13 +81,7 @@ public class SubjectService : ISubjectService
 
         await _unitOfWork.SubjectRepository.CreateAsync(entity);
 
-        return new SubjectResponseDto
-        {
-            SubjectId = entity.SubjectId,
-            SubjectCode = entity.SubjectCode,
-            SubjectName = entity.SubjectName,
-            Credit = entity.Credit
-        };
+        return MapToResponse(entity);
     }
 
     public async Task<SubjectResponseDto> UpdateSubjectAsync(int id, SubjectUpdateRequestDto request)
@@ -112,13 +95,7 @@ public class SubjectService : ISubjectService
         UpdateHelper.ApplyUpdates(existing, request);
         await _unitOfWork.SubjectRepository.UpdateAsync(existing);
 
-        return new SubjectResponseDto
-        {
-            SubjectId = existing.SubjectId,
-            SubjectCode = existing.SubjectCode,
-            SubjectName = existing.SubjectName,
-            Credit = existing.Credit
-        };
+        return MapToResponse(existing);
     }
 
     public async Task DeleteSubjectAsync(int id)
@@ -130,5 +107,16 @@ public class SubjectService : ISubjectService
         }
 
         await _unitOfWork.SubjectRepository.RemoveAsync(existing);
+    }
+
+    private static SubjectResponseDto MapToResponse(Subject entity)
+    {
+        return new SubjectResponseDto
+        {
+            SubjectId = entity.SubjectId,
+            SubjectCode = entity.SubjectCode,
+            SubjectName = entity.SubjectName,
+            Credit = entity.Credit
+        };
     }
 }

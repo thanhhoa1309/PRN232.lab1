@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Prn232.Lab1.Service.Validators;
 
 namespace Prn232.Lab1.Service.Dtos.Subjects;
 
@@ -6,6 +7,7 @@ public class SubjectCreateRequestDto
 {
     [Required(ErrorMessage = "SubjectCode is required.")]
     [StringLength(20)]
+    [FptSubjectCode]
     public string SubjectCode { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "SubjectName is required.")]

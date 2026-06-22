@@ -5,10 +5,9 @@ namespace Prn232.Lab1.Service.Interfaces;
 
 public interface IUserService
 {
-    Task<Pagination<UserResponseDto>> GetUsersAsync(
+    Task<PagedResult<UserResponseDto>> GetUsersAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize);
 

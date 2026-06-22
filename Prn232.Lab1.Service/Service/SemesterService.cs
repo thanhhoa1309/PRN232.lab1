@@ -18,18 +18,25 @@ public class SemesterService : ISemesterService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Pagination<SemesterResponseDto>> GetSemestersAsync(
+    public async Task<PagedResult<SemesterResponseDto>> GetSemestersAsync(
         string? search,
-        string? sortBy,
-        bool isDescending,
+        string? sort,
         int page,
         int pageSize,
+        string? fields,
         string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
 
+        var includeCourses = ExpandHelper.HasExpand(expand, "courses");
+
         IQueryable<Semester> dbQuery = _unitOfWork.SemesterRepository.GetAllAsQueryable();
+
+        if (includeCourses)
+        {
+            dbQuery = dbQuery.Include(s => s.Courses);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -45,48 +52,30 @@ public class SemesterService : ISemesterService
             ["endDate"] = s => s.EndDate
         };
 
-        dbQuery = QueryHelper.ApplySorting(dbQuery, sortBy, isDescending, sortMap);
+        dbQuery = QueryHelper.ApplySorting(dbQuery, sort, sortMap);
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        var includeCourses = !string.IsNullOrWhiteSpace(expand)
-            && expand.Contains("courses", StringComparison.OrdinalIgnoreCase);
+        var responses = items
+            .Select(s => MapToResponse(s, includeCourses))
+            .ToList();
 
-        var responses = items.Select(s => new SemesterResponseDto
-        {
-            SemesterId = s.SemesterId,
-            SemesterName = s.SemesterName,
-            StartDate = s.StartDate,
-            EndDate = s.EndDate,
-            Courses = includeCourses
-                ? s.Courses?.Select(c => new CourseResponseDto
-                {
-                    CourseId = c.CourseId,
-                    CourseName = c.CourseName,
-                    SemesterId = c.SemesterId
-                }).ToList()
-                : null
-        }).ToList();
-
-        return new Pagination<SemesterResponseDto>(responses, totalCount, page, pageSize);
+        return PagedResult<SemesterResponseDto>.Create(responses, totalCount, page, pageSize);
     }
 
     public async Task<SemesterResponseDto> GetSemesterByIdAsync(int id)
     {
-        var entity = await _unitOfWork.SemesterRepository.GetByIdAsync(id);
+        var entity = await _unitOfWork.SemesterRepository.GetAllAsQueryable()
+            .Include(s => s.Courses)
+            .FirstOrDefaultAsync(s => s.SemesterId == id);
+
         if (entity == null)
         {
             throw ErrorHelper.NotFound("Semester not found.");
         }
 
-        return new SemesterResponseDto
-        {
-            SemesterId = entity.SemesterId,
-            SemesterName = entity.SemesterName,
-            StartDate = entity.StartDate,
-            EndDate = entity.EndDate
-        };
+        return MapToResponse(entity, includeCourses: true);
     }
 
     public async Task<SemesterResponseDto> CreateSemesterAsync(SemesterCreateRequestDto request)
@@ -107,13 +96,7 @@ public class SemesterService : ISemesterService
 
         await _unitOfWork.SemesterRepository.CreateAsync(entity);
 
-        return new SemesterResponseDto
-        {
-            SemesterId = entity.SemesterId,
-            SemesterName = entity.SemesterName,
-            StartDate = entity.StartDate,
-            EndDate = entity.EndDate
-        };
+        return MapToResponse(entity, includeCourses: false);
     }
 
     public async Task<SemesterResponseDto> UpdateSemesterAsync(int id, SemesterUpdateRequestDto request)
@@ -133,23 +116,44 @@ public class SemesterService : ISemesterService
 
         await _unitOfWork.SemesterRepository.UpdateAsync(existing);
 
-        return new SemesterResponseDto
-        {
-            SemesterId = existing.SemesterId,
-            SemesterName = existing.SemesterName,
-            StartDate = existing.StartDate,
-            EndDate = existing.EndDate
-        };
+        return MapToResponse(existing, includeCourses: false);
     }
 
     public async Task DeleteSemesterAsync(int id)
     {
-        var existing = await _unitOfWork.SemesterRepository.GetByIdAsync(id);
+        var existing = await _unitOfWork.SemesterRepository.GetAllAsQueryable()
+            .Include(s => s.Courses)
+            .FirstOrDefaultAsync(s => s.SemesterId == id);
+
         if (existing == null)
         {
             throw ErrorHelper.NotFound("Semester not found.");
         }
 
+        if (existing.Courses.Any())
+        {
+            throw ErrorHelper.BadRequest("Cannot delete semester that has courses.");
+        }
+
         await _unitOfWork.SemesterRepository.RemoveAsync(existing);
+    }
+
+    private static SemesterResponseDto MapToResponse(Semester entity, bool includeCourses)
+    {
+        return new SemesterResponseDto
+        {
+            SemesterId = entity.SemesterId,
+            SemesterName = entity.SemesterName,
+            StartDate = entity.StartDate,
+            EndDate = entity.EndDate,
+            Courses = includeCourses
+                ? entity.Courses?.Select(c => new CourseResponseDto
+                {
+                    CourseId = c.CourseId,
+                    CourseName = c.CourseName,
+                    SemesterId = c.SemesterId
+                }).ToList()
+                : null
+        };
     }
 }

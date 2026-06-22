@@ -2,90 +2,69 @@
 
 public class ApiResult
 {
-    public bool IsSuccess { get; set; }
-    public ResponseContent Value { get; set; }
-    public ErrorContent Error { get; set; }
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public object? Data { get; set; }
+    public object? Errors { get; set; }
+    public PaginationMetadata? Pagination { get; set; }
 
-    public static ApiResult Success(string code = "200", string message = "Operation successful.")
+    public static ApiResult SuccessResult(
+        object? data,
+        string message = "Request processed successfully.",
+        PaginationMetadata? pagination = null)
     {
         return new ApiResult
         {
-            IsSuccess = true,
-            Value = new ResponseContent
-            {
-                Code = code,
-                Message = message
-            },
-            Error = null
+            Success = true,
+            Message = message,
+            Data = data,
+            Errors = null,
+            Pagination = pagination
         };
     }
 
-    public static ApiResult Failure(string code = "400", string message = "Operation failed.")
+    public static ApiResult FailureResult(string message, object? errors = null)
     {
         return new ApiResult
         {
-            IsSuccess = false,
-            Value = null,
-            Error = new ErrorContent
-            {
-                Code = code,
-                Message = message
-            }
+            Success = false,
+            Message = message,
+            Data = null,
+            Errors = errors ?? new[] { message },
+            Pagination = null
         };
     }
 }
 
 public class ApiResult<T>
 {
-    public bool IsSuccess { get; set; }
-    public ResponseDataContent<T> Value { get; set; }
-    public ErrorContent Error { get; set; }
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public T? Data { get; set; }
+    public object? Errors { get; set; }
+    public PaginationMetadata? Pagination { get; set; }
 
-    public static ApiResult<T> Success(T data, string code = "200", string message = "Operation successful.")
+    public static ApiResult<T> Ok(T data, string message = "Request processed successfully.")
     {
         return new ApiResult<T>
         {
-            IsSuccess = true,
-            Value = new ResponseDataContent<T>
-            {
-                Code = code,
-                Message = message,
-                Data = data
-            },
-            Error = null
+            Success = true,
+            Message = message,
+            Data = data,
+            Errors = null,
+            Pagination = null
         };
     }
 
-    public static ApiResult<T> Failure(string code = "400", string message = "Operation failed.")
+    public static ApiResult<T> Failure(string message, object? errors = null)
     {
         return new ApiResult<T>
         {
-            IsSuccess = false,
-            Value = null,
-            Error = new ErrorContent
-            {
-                Code = code,
-                Message = message
-            }
+            Success = false,
+            Message = message,
+            Data = default,
+            Errors = errors ?? new[] { message },
+            Pagination = null
         };
     }
-}
-
-public class ResponseContent
-{
-    public string Code { get; set; }
-    public string Message { get; set; }
-}
-
-public class ResponseDataContent<T>
-{
-    public string Code { get; set; }
-    public string Message { get; set; }
-    public T Data { get; set; }
-}
-
-public class ErrorContent
-{
-    public string Code { get; set; }
-    public string Message { get; set; }
 }
