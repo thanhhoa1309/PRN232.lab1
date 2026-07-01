@@ -8,12 +8,6 @@ public class PaginationMetadata
     public int TotalPages { get; set; }
 }
 
-public class ListResponseDto
-{
-    public object Items { get; set; } = Array.Empty<object>();
-    public PaginationMetadata Pagination { get; set; } = new();
-}
-
 public class PagedResult<T>
 {
     public List<T> Items { get; set; } = [];

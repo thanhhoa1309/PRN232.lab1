@@ -4,7 +4,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using FUNewsManagementSystem.Architecture;
 using Microsoft.AspNetCore.Mvc;
-using Prn232.Lab1.API.Middlewares;
+using Prn232.Lab1.API.Middleware;
 using Prn232.Lab1.Service.Interfaces;
 using Prn232.Lab1.Service.Utils;
 using SwaggerThemes;
@@ -22,6 +22,7 @@ builder.Configuration
 builder.Services.AddControllers(options =>
     {
         options.ReturnHttpNotAcceptable = true;
+        options.Filters.Add(new Microsoft.AspNetCore.Mvc.ProducesAttribute("application/json", "application/xml"));
     })
     .AddXmlSerializerFormatters()
     .AddJsonOptions(options =>

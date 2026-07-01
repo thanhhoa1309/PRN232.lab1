@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Subjects;
@@ -8,7 +9,8 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
-[Route("api/subjects")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/subjects")]
 [Authorize]
 [SwaggerTag("Subjects")]
 public class SubjectsController : ControllerBase
@@ -67,7 +69,7 @@ public class SubjectsController : ControllerBase
 
         return CreatedAtAction(
             nameof(GetSubjectById),
-            new { id = result.SubjectId },
+            new { id = result.SubjectId, version = "1.0" },
             ApiResult<SubjectResponseDto>.Ok(result, "Subject created successfully."));
     }
 

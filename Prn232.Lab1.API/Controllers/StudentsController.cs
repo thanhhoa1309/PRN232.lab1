@@ -10,7 +10,7 @@ namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route("api/v1/students")]
+[Route("api/v{version:apiVersion}/students")]
 [Authorize]
 [SwaggerTag("Students v1")]
 public class StudentsController : ControllerBase
@@ -80,7 +80,7 @@ public class StudentsController : ControllerBase
 
         return CreatedAtRoute(
             "GetStudentById",
-            new { id = result.StudentId },
+            new { id = result.StudentId, version = "1.0" },
             ApiResult<StudentResponseDto>.Ok(result, "Student created successfully."));
     }
 

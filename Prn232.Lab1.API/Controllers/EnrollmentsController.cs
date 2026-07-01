@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Enrollments;
@@ -8,7 +9,8 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
-[Route("api/enrollments")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/enrollments")]
 [Authorize]
 [SwaggerTag("Enrollments")]
 public class EnrollmentsController : ControllerBase
@@ -67,7 +69,7 @@ public class EnrollmentsController : ControllerBase
 
         return CreatedAtAction(
             nameof(GetEnrollmentById),
-            new { id = result.EnrollmentId },
+            new { id = result.EnrollmentId, version = "1.0" },
             ApiResult<EnrollmentResponseDto>.Ok(result, "Enrollment created successfully."));
     }
 

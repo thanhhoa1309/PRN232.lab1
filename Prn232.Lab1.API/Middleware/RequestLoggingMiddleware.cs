@@ -1,4 +1,4 @@
-namespace Prn232.Lab1.API.Middlewares;
+namespace Prn232.Lab1.API.Middleware;
 
 public class RequestLoggingMiddleware
 {

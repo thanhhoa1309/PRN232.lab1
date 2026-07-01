@@ -23,7 +23,9 @@ public class UserService : IUserService
         string? search,
         string? sort,
         int page,
-        int pageSize)
+        int pageSize,
+        string? fields,
+        string? expand)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? 10 : pageSize;
@@ -48,6 +50,9 @@ public class UserService : IUserService
 
         var totalCount = await dbQuery.CountAsync();
         var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        _ = fields;
+        _ = expand;
 
         var responses = items.Select(MapToResponse).ToList();
         return PagedResult<UserResponseDto>.Create(responses, totalCount, page, pageSize);

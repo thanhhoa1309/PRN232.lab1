@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Semesters;
@@ -8,7 +9,8 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
-[Route("api/semesters")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/semesters")]
 [Authorize]
 [SwaggerTag("Semesters")]
 public class SemestersController : ControllerBase
@@ -67,7 +69,7 @@ public class SemestersController : ControllerBase
 
         return CreatedAtAction(
             nameof(GetSemesterById),
-            new { id = result.SemesterId },
+            new { id = result.SemesterId, version = "1.0" },
             ApiResult<SemesterResponseDto>.Ok(result, "Semester created successfully."));
     }
 

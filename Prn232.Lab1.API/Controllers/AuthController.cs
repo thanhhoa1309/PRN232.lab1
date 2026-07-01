@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Auth;
@@ -8,7 +9,9 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/auth")]
+[Route("api/v{version:apiVersion}/auth")]
 [SwaggerTag("Authentication")]
 public class AuthController : ControllerBase
 {

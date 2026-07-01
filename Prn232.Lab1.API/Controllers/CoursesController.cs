@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prn232.Lab1.Service.Dtos.Courses;
@@ -8,7 +9,8 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
-[Route("api/courses")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/courses")]
 [Authorize]
 [SwaggerTag("Courses")]
 public class CoursesController : ControllerBase
@@ -117,7 +119,7 @@ public class CoursesController : ControllerBase
 
         return CreatedAtAction(
             nameof(GetCourseByDetail),
-            new { id = result.CourseId },
+            new { id = result.CourseId, version = "1.0" },
             ApiResult<CourseResponseDto>.Ok(result, "Course created successfully."));
     }
 

@@ -9,7 +9,9 @@ public interface IUserService
         string? search,
         string? sort,
         int page,
-        int pageSize);
+        int pageSize,
+        string? fields,
+        string? expand);
 
     Task<UserResponseDto> GetUserByIdAsync(int id);
     Task<UserResponseDto> CreateUserAsync(UserCreateRequestDto request);

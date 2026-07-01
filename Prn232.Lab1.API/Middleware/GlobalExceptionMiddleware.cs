@@ -1,7 +1,7 @@
-﻿using Prn232.Lab1.Service.Utils;
+using Prn232.Lab1.Service.Utils;
 using System.Text.Json;
 
-namespace Prn232.Lab1.API.Middlewares;
+namespace Prn232.Lab1.API.Middleware;
 
 public class GlobalExceptionMiddleware
 {

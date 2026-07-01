@@ -10,7 +10,7 @@ namespace Prn232.Lab1.API.Controllers;
 
 [ApiController]
 [ApiVersion("2.0")]
-[Route("api/v2/students")]
+[Route("api/v{version:apiVersion}/students")]
 [Authorize]
 [SwaggerTag("Students v2")]
 public class StudentsV2Controller : ControllerBase

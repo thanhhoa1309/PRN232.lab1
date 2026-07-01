@@ -15,7 +15,7 @@ public class EnrollmentCreateRequestDto
     public DateTime? EnrollDate { get; set; }
 
     [Required(ErrorMessage = "Status is required.")]
-    [RegularExpression("^(Active|Completed|Dropped)$",
-        ErrorMessage = "Status must be Active, Completed, or Dropped.")]
+    [RegularExpression("^(Active|Completed|Dropped|Pending)$",
+        ErrorMessage = "Status must be Active, Completed, Dropped, or Pending.")]
     public string Status { get; set; } = string.Empty;
 }

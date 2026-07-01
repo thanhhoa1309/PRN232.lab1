@@ -21,14 +21,19 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
-    [SwaggerOperation(Summary = "Get all users")]
+    [SwaggerOperation(
+        Summary = "Get all users",
+        Description = "Retrieve a paginated list of users with optional search, sort, fields, and expand options.")]
     [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(typeof(ApiResult), 400)]
     public async Task<IActionResult> GetAllUsers(
-        [FromQuery] string? search = null,
-        [FromQuery] string? sort = null,
-        [FromQuery] int page = 1,
-        [FromQuery] int? size = null,
-        [FromQuery] int pageSize = 10)
+        [FromQuery, SwaggerParameter(Description = "Search by username or role")] string? search = null,
+        [FromQuery, SwaggerParameter(Description = "Sort fields, e.g. username,-role")] string? sort = null,
+        [FromQuery, SwaggerParameter(Description = "Page number, starting from 1")] int page = 1,
+        [FromQuery, SwaggerParameter(Description = "Number of items per page")] int? size = null,
+        [FromQuery, SwaggerParameter(Description = "Alias of size")] int pageSize = 10,
+        [FromQuery, SwaggerParameter(Description = "Select fields, e.g. userId,username,role")] string? fields = null,
+        [FromQuery, SwaggerParameter(Description = "Expand related data (no relations for User)")] string? expand = null)
     {
         var resolvedPageSize = ListApiHelper.ResolvePageSize(size, pageSize);
         if (page < 1 || resolvedPageSize < 1)
@@ -36,8 +41,9 @@ public class UsersController : ControllerBase
             return BadRequest(ApiResult.FailureResult("Invalid pagination parameters."));
         }
 
-        var result = await _userService.GetUsersAsync(search, sort, page, resolvedPageSize);
-        return Ok(ListApiHelper.ToListResponse(result, "Users retrieved successfully.", fields: null));
+        var result = await _userService.GetUsersAsync(
+            search, sort, page, resolvedPageSize, fields, expand);
+        return Ok(ListApiHelper.ToListResponse(result, "Users retrieved successfully.", fields));
     }
 
     [HttpGet("{id:int}")]

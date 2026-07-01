@@ -4,17 +4,11 @@ public static class ListApiHelper
 {
     public static ApiResult ToListResponse<T>(PagedResult<T> result, string message, string? fields)
     {
-        object items = string.IsNullOrWhiteSpace(fields)
+        object data = string.IsNullOrWhiteSpace(fields)
             ? result.Items
             : FieldsHelper.SelectFields(result.Items, fields);
 
-        var data = new ListResponseDto
-        {
-            Items = items,
-            Pagination = result.Pagination
-        };
-
-        return ApiResult.SuccessResult(data, message);
+        return ApiResult.SuccessResult(data, message, result.Pagination);
     }
 
     public static int ResolvePageSize(int? size, int pageSize)
